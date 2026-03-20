@@ -120,14 +120,23 @@ cp .env.example .env.local
 
 Fill in your actual credentials:
 - Supabase URL and keys
-- Stripe keys
+- Stripe keys (public and secret)
 - Bunny.net API credentials
 
-3. **Set up the database**
-```bash
-# Run the migration scripts in Supabase SQL editor
-# scripts/001_profiles.sql through scripts/007_triggers.sql
-```
+3. **Set up the database - IMPORTANT**
+
+Go to your Supabase dashboard and run the SQL setup script:
+
+1. Open Supabase SQL Editor
+2. Copy the contents of `scripts/setup-all.sql`
+3. Paste into SQL Editor and execute
+4. (Optional) Run `scripts/seed-data.sql` for demo data
+
+The setup script will:
+- Create all necessary tables (profiles, events, subscriptions, purchases, streams, replays)
+- Enable Row Level Security (RLS)
+- Create database triggers for auto-generated profiles and timestamps
+- Set up proper indexes for performance
 
 4. **Run the development server**
 ```bash
@@ -140,10 +149,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Supabase Setup
 
-1. Create a new Supabase project
-2. Run the SQL migration scripts in order (001-007)
-3. Create authentication roles and policies
-4. Copy your project URL and API keys to .env.local
+1. Create a new Supabase project at https://supabase.com
+2. Go to Settings → API and copy:
+   - Project URL (NEXT_PUBLIC_SUPABASE_URL)
+   - Anon Public Key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+   - Service Role Key (SUPABASE_SERVICE_ROLE_KEY)
+3. Go to SQL Editor and run `scripts/setup-all.sql` to create database schema
+4. (Optional) Run `scripts/seed-data.sql` to add demo events
+5. Paste keys into your .env.local file
 
 ### Stripe Setup
 
