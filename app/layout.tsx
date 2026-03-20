@@ -7,9 +7,16 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Prime Fight - Live Combat Sports Streaming',
+  description: 'Premium PPV streaming platform for boxing, MMA, and K-1 events. Watch live fights and replays with a monthly or annual subscription.',
   generator: 'v0.app',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
   icons: {
     icon: [
       {
