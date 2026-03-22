@@ -79,8 +79,8 @@ export function Navbar() {
             <>
               {user ? (
                 <div className="flex items-center gap-3">
-                  <Link href="/profile" className="text-sm font-medium hover:text-primary transition-colors">
-                    Profile
+                  <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
+                    Dashboard
                   </Link>
                   <Button
                     onClick={handleLogout}

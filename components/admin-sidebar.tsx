@@ -11,6 +11,7 @@ export function AdminSidebar() {
     { href: '/admin/events', label: 'Events', icon: '🎬' },
     { href: '/admin/streams', label: 'Streams', icon: '📡' },
     { href: '/admin/users', label: 'Users', icon: '👥' },
+    { href: '/admin/transactions', label: 'Transactions', icon: '💳' },
     { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
     { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
   ]

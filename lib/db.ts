@@ -257,3 +257,64 @@ export async function createStreamAccess(access: Omit<StreamAccess, 'id'>) {
   if (error) throw error
   return data as StreamAccess
 }
+
+// Admin Functions
+export async function getAllUsers() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as Profile[]
+}
+
+export async function getUserPurchases(userId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('purchases')
+    .select('*')
+    .eq('user_id', userId)
+    .order('purchase_date', { ascending: false })
+
+  if (error) throw error
+  return data as Purchase[]
+}
+
+export async function getAllPurchases() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('purchases')
+    .select('*')
+    .order('purchase_date', { ascending: false })
+
+  if (error) throw error
+  return data as Purchase[]
+}
+
+export async function getAllSubscriptions() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as Subscription[]
+}
+
+export async function deleteEvent(id: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
