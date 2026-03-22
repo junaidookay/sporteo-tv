@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { ThemeSwitcher } from '@/components/theme-switcher'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -71,8 +72,9 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Auth Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Auth Buttons & Theme */}
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
           {!loading && (
             <>
               {user ? (
