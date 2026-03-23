@@ -6,7 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getProfile, getUserSubscription, getEvents, getPurchase } from '@/lib/db'
+import { getProfile, getUserSubscription, getEvents, getPurchase, getUserPurchases } from '@/lib/db-client'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -34,11 +34,11 @@ export default function DashboardPage() {
         setUser(user)
 
         // Load profile
-        const profileData = await getProfile(user.id)
+        const profileData = await getProfile(supabase, user.id)
         setProfile(profileData)
 
         // Load subscription
-        const subData = await getUserSubscription(user.id)
+        const subData = await getUserSubscription(supabase, user.id)
         setSubscription(subData)
 
         // Load purchases

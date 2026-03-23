@@ -6,7 +6,7 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getEvents, createEvent, updateEvent } from '@/lib/db'
+import { getEvents, createEvent, updateEvent } from '@/lib/db-client'
 
 export default function AdminEventsPage() {
   const router = useRouter()
@@ -62,7 +62,7 @@ export default function AdminEventsPage() {
 
   const loadEvents = async () => {
     try {
-      const eventsData = await getEvents()
+        const eventsData = await getEvents(supabase)
       setEvents(eventsData.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()))
     } catch (error) {
       console.error('Failed to load events:', error)
@@ -92,9 +92,9 @@ export default function AdminEventsPage() {
       }
 
       if (editingEvent) {
-        await updateEvent(editingEvent.id, eventData)
+        await updateEvent(supabase, editingEvent.id, eventData)
       } else {
-        await createEvent(eventData as any)
+        await createEvent(supabase, eventData as any)
       }
 
       await loadEvents()
