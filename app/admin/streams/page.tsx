@@ -6,7 +6,7 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getEvents } from '@/lib/db'
+import { getEvents } from '@/lib/db-client'
 
 export default function StreamsPage() {
   const router = useRouter()
@@ -36,7 +36,7 @@ export default function StreamsPage() {
 
         setUser(user)
 
-        const eventsData = await getEvents()
+        const eventsData = await getEvents(supabase)
         setEvents(eventsData)
       } catch (error) {
         console.error('Auth check failed:', error)

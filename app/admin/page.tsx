@@ -6,7 +6,7 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getEvents } from '@/lib/db'
+import { getEvents } from '@/lib/db-client'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
         setUser(user)
 
         // Load events
-        const eventsData = await getEvents()
+        const eventsData = await getEvents(supabase)
         setEvents(eventsData)
 
         // Calculate stats

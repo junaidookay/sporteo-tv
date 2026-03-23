@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { getEvents } from '@/lib/db'
+import { getEvents } from '@/lib/db-client'
 
 export default function AdminAnalyticsPage() {
   const router = useRouter()
@@ -28,7 +28,7 @@ export default function AdminAnalyticsPage() {
         setUser(user)
 
         // Load events
-        const eventsData = await getEvents()
+        const eventsData = await getEvents(supabase)
         setEvents(eventsData)
       } catch (error) {
         console.error('Failed to load events:', error)

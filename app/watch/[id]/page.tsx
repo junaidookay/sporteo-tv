@@ -6,7 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { VideoPlayer } from '@/components/video-player'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { getEventById, getStreamAccess } from '@/lib/db'
+import { getEventById, getStreamAccess } from '@/lib/db-client'
 import { getHLSPlaybackUrl, getStreamStats } from '@/lib/bunny'
 
 export default function WatchPage() {
@@ -29,7 +29,7 @@ export default function WatchPage() {
         setUser(user)
 
         // Get event
-        const eventData = await getEventById(eventId)
+        const eventData = await getEventById(supabase, eventId)
         if (!eventData) {
           throw new Error('Event not found')
         }
@@ -37,7 +37,7 @@ export default function WatchPage() {
 
         // Check stream access
         if (user && eventData) {
-          const access = await getStreamAccess(user.id, eventData.id)
+          const access = await getStreamAccess(supabase, user.id, eventData.id)
           if (!access && eventData.subscription_required) {
             throw new Error('You do not have access to this stream')
           }

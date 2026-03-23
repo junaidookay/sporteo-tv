@@ -6,7 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getProfile, updateProfile } from '@/lib/db'
+import { getProfile, updateProfile } from '@/lib/db-client'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -37,7 +37,7 @@ export default function ProfilePage() {
 
         setUser(user)
 
-        const profileData = await getProfile(user.id)
+        const profileData = await getProfile(supabase, user.id)
         if (profileData) {
           setProfile(profileData)
           setFormData({
@@ -74,7 +74,7 @@ export default function ProfilePage() {
     try {
       if (!user) throw new Error('User not found')
 
-      await updateProfile(user.id, formData)
+        await updateProfile(supabase, user.id, formData)
       setSuccess('Profile updated successfully')
     } catch (err) {
       console.error('Failed to update profile:', err)
