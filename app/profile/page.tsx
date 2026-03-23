@@ -219,31 +219,30 @@ export default function ProfilePage() {
                 </Button>
               </form>
             </Card>
-          </div>
-
-          {/* Preferences Section */}
-          <Card className="mt-8 p-8 border-border">
-            <h2 className="text-xl font-black mb-6">PREFERENCES</h2>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                <div>
-                  <p className="font-bold">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Get notified about upcoming events</p>
-                </div>
-                <input type="checkbox" defaultChecked className="w-5 h-5 accent-primary" />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                <div>
-                  <p className="font-bold">Marketing Emails</p>
-                  <p className="text-sm text-muted-foreground">Receive updates and promotions</p>
-                </div>
-                <input type="checkbox" className="w-5 h-5 accent-primary" />
-              </div>
-            </div>
-          </Card>
         </div>
+
+        {/* Preferences Section */}
+        <Card className="mt-8 p-8 border-border">
+          <h2 className="text-xl font-black mb-6">PREFERENCES</h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+              <div>
+                <p className="font-bold">Email Notifications</p>
+                <p className="text-sm text-muted-foreground">Get notified about upcoming events</p>
+              </div>
+              <input type="checkbox" defaultChecked className="w-5 h-5 accent-primary" />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+              <div>
+                <p className="font-bold">Marketing Emails</p>
+                <p className="text-sm text-muted-foreground">Receive updates and promotions</p>
+              </div>
+              <input type="checkbox" className="w-5 h-5 accent-primary" />
+            </div>
+          </div>
+        </Card>
       </main>
     </div>
   )
