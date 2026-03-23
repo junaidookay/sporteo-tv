@@ -2,29 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { UserMenu } from '@/components/user-menu'
 
 export function Navbar() {
   const pathname = usePathname()
-  const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    })()
-  }, [])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-  }
 
   const isActive = (path: string) => pathname === path
 
@@ -72,41 +55,10 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Auth Buttons & Theme */}
+        {/* Theme & User Menu */}
         <div className="flex items-center gap-2">
           <ThemeSwitcher />
-          {!loading && (
-            <>
-              {user ? (
-                <div className="flex items-center gap-3">
-                  <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-                    Dashboard
-                  </Link>
-                  <Button
-                    onClick={handleLogout}
-                    variant="outline"
-                    size="sm"
-                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  >
-                    Logout
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/auth/login">
-                    <Button variant="ghost" size="sm" className="text-foreground hover:text-primary">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/auth/sign-up">
-                    <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      Get Started
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </>
-          )}
+          <UserMenu />
         </div>
       </div>
     </nav>

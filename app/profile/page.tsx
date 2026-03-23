@@ -110,28 +110,27 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-5xl font-black mb-8">MY PROFILE</h1>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-4xl font-black mb-8">MY PROFILE</h1>
 
-          {error && (
-            <div className="mb-6 p-4 bg-destructive/10 border border-destructive rounded-lg text-destructive">
-              {error}
-            </div>
-          )}
+        {error && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive rounded-lg text-destructive">
+            {error}
+          </div>
+        )}
 
-          {success && (
-            <div className="mb-6 p-4 bg-primary/10 border border-primary rounded-lg text-primary">
-              {success}
-            </div>
-          )}
+        {success && (
+          <div className="mb-6 p-4 bg-primary/10 border border-primary rounded-lg text-primary">
+            {success}
+          </div>
+        )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Account Info Card */}
-            <Card className="lg:col-span-1 p-6 border-border h-fit">
-              <h2 className="text-xl font-black mb-6">ACCOUNT INFO</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Account Info Card */}
+          <Card className="lg:col-span-1 p-6 border-border h-fit">
+            <h2 className="text-xl font-black mb-6">ACCOUNT INFO</h2>
 
-              <div className="space-y-4">
+            <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Email</p>
                   <p className="font-medium break-all">{user.email}</p>
