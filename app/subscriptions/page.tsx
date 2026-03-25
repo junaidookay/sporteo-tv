@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
-import { Checkout } from '@/components/checkout'
+import Checkout from '@/components/checkout'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
 export default function SubscriptionsPage() {
