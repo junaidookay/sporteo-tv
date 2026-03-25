@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { getEvents } from '@/lib/db'
 
 export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function ReplaysPage() {
   let completedEvents = []
