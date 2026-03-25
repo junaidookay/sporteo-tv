@@ -16,7 +16,7 @@ export function Navbar() {
       <div className="flex h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="font-black text-2xl text-primary">
-          PRIME FIGHT
+          SPORTEO.TV
         </Link>
 
         {/* Desktop Navigation */}
