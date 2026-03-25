@@ -122,6 +122,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
+      {/* Watch Live Banner */}
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+                <span className="text-lg font-black">LIVE EVENTS</span>
+              </div>
+              <p className="text-primary-foreground/80 text-sm">2 events streaming right now</p>
+            </div>
+            <Link href="/live">
+              <Button className="bg-white text-primary hover:bg-white/90 font-black">
+                WATCH LIVE →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-background via-secondary to-background py-20 md:py-40">
         <div className="absolute inset-0 opacity-20">
@@ -358,7 +378,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">Access to all events, live and replays included</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-black text-primary mb-4">⚡</div>
+              <div className="text-5xl font-black text-primary mb-4">��</div>
               <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
               <p className="text-muted-foreground">No buffering, no lag, premium stream quality</p>
             </div>

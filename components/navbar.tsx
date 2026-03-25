@@ -22,6 +22,13 @@ export function Navbar() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
           <Link
+            href="/live"
+            className="px-4 py-2 text-sm font-black rounded-md transition-all bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 animate-pulse"
+          >
+            <span className="w-2 h-2 bg-white rounded-full"></span>
+            LIVE
+          </Link>
+          <Link
             href="/"
             className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
               isActive('/') ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary text-foreground'
