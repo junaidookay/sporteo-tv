@@ -150,12 +150,12 @@ export default function HomePage() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* Main Featured - Large */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 h-full">
               <Link href={`/events/${FEATURED_EVENTS[0].id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-all cursor-pointer group h-full">
-                  <div className="relative h-96 overflow-hidden">
+                  <div className="relative h-96 lg:h-full min-h-[384px] overflow-hidden">
                     <img
                       src={FEATURED_EVENTS[0].featured_image}
                       alt={FEATURED_EVENTS[0].title}
@@ -177,11 +177,11 @@ export default function HomePage() {
             </div>
 
             {/* Secondary Featured Items */}
-            <div className="grid grid-rows-2 gap-4 h-96">
+            <div className="grid grid-rows-2 gap-4 h-full">
               {FEATURED_EVENTS.slice(1, 3).map((event) => (
                 <Link key={event.id} href={`/events/${event.id}`}>
                   <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full">
-                    <div className="relative h-full overflow-hidden">
+                    <div className="relative h-full min-h-[128px] overflow-hidden">
                       <img
                         src={event.featured_image}
                         alt={event.title}
