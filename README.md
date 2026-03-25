@@ -1,6 +1,6 @@
-# Prime Fight - Premium PPV Combat Sports Streaming Platform
+# Sporteo.tv - Premium Live Sports Streaming Platform
 
-A full-stack Next.js 16 application for streaming live boxing, MMA, and K-1 fights with secure payments, real-time streaming, and admin management.
+A full-stack Next.js 16 application for streaming live sports events worldwide with secure payments, real-time streaming, and admin management.
 
 ## Tech Stack
 
@@ -16,11 +16,11 @@ A full-stack Next.js 16 application for streaming live boxing, MMA, and K-1 figh
 
 ### User Features
 - 🔐 User authentication with Supabase
-- 📺 Browse upcoming and past fighting events
+- 📺 Browse upcoming and past sports events
 - 💳 Pay-per-view (PPV) event purchasing
 - 📅 Monthly and annual subscription plans
 - 🎥 Live and on-demand video streaming
-- 👤 User profile management
+- 👤 User profile and dashboard
 - 📱 Responsive design for all devices
 
 ### Admin Features

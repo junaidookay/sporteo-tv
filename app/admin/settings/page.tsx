@@ -17,8 +17,8 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState('')
 
   const [settings, setSettings] = useState({
-    platformName: 'Prime Fight',
-    platformEmail: 'support@primefight.com',
+    platformName: 'Sporteo.tv',
+    platformEmail: 'support@sporteo.tv',
     defaultPPVPrice: '4999',
     monthlySubPrice: '999',
     yearlySubPrice: '9999',

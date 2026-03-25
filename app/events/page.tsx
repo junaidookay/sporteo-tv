@@ -26,9 +26,9 @@ export default async function EventsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-12">
-          <h1 className="text-5xl font-black mb-4">EVENTS</h1>
+          <h1 className="text-5xl font-black mb-4">LIVE EVENTS</h1>
           <p className="text-xl text-muted-foreground">
-            Watch live boxing, MMA, and K-1 events streamed in HD
+            Watch live sports events from around the world streamed in HD
           </p>
         </div>
 
@@ -42,7 +42,7 @@ export default async function EventsPage() {
         {upcomingEvents.length > 0 && (
           <section className="mb-16">
             <div className="mb-8">
-              <h2 className="text-3xl font-black">UPCOMING FIGHTS</h2>
+              <h2 className="text-3xl font-black">UPCOMING EVENTS</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingEvents.map((event) => (

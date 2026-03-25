@@ -10,100 +10,100 @@ import { useState, useEffect } from 'react'
 const FEATURED_EVENTS = [
   {
     id: '1',
-    title: 'Canelo vs GGG III - Championship Rematch',
-    description: 'The trilogy fight between two boxing legends for the undisputed title',
-    event_type: 'BOXING',
-    featured_image: 'https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=800&h=500&fit=crop',
+    title: 'Champions League Final - Football',
+    description: 'The biggest club football tournament culminates in an epic final showdown',
+    event_type: 'FOOTBALL',
+    featured_image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=500&fit=crop',
     start_time: '2025-04-15T20:00:00Z',
     ticket_price_cents: 7999,
   },
   {
     id: '2',
-    title: 'Adesanya vs Dricus II - UFC Middleweight Title',
-    description: 'Epic rematch at the apex of UFC competition',
-    event_type: 'MMA',
+    title: 'NBA Finals Game 1 - Basketball',
+    description: 'The ultimate championship series as the best teams battle for glory',
+    event_type: 'BASKETBALL',
     featured_image: 'https://images.unsplash.com/photo-1518611505868-d2b4f0ff69d5?w=800&h=500&fit=crop',
     start_time: '2025-04-22T23:00:00Z',
     ticket_price_cents: 6999,
   },
   {
     id: '3',
-    title: 'Tenshin Nasukawa vs Top Bantamweight',
-    description: 'High-flying K-1 action with the technical mastery you expect',
-    event_type: 'K-1',
+    title: 'Wimbledon Tennis Tournament',
+    description: 'The most prestigious tennis championship in the world',
+    event_type: 'TENNIS',
     featured_image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=500&fit=crop',
     start_time: '2025-05-01T18:00:00Z',
     ticket_price_cents: 4999,
   },
 ]
 
-const BOXING_EVENTS = [
+const FEATURED_CATEGORY = [
   {
     id: '4',
-    title: 'Terence Crawford - Welterweight Champion',
-    event_type: 'BOXING',
+    title: 'Premier League - Manchester Derby',
+    event_type: 'FOOTBALL',
     featured_image: 'https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=400&h=300&fit=crop',
     ticket_price_cents: 5499,
   },
   {
     id: '5',
-    title: 'Ryan Garcia Comeback Fight',
+    title: 'Lakers vs Celtics - NBA',
     event_type: 'BOXING',
     featured_image: 'https://images.unsplash.com/photo-1549719386-74dfaf00b721?w=400&h=300&fit=crop',
     ticket_price_cents: 4999,
   },
   {
     id: '6',
-    title: 'Devin Haney Returns to Ring',
-    event_type: 'BOXING',
+    title: 'US Open - Tennis Grand Slam',
+    event_type: 'TENNIS',
     featured_image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',
     ticket_price_cents: 5999,
   },
 ]
 
-const MMA_EVENTS = [
+const BASKETBALL_EVENTS = [
   {
     id: '7',
-    title: 'Volkanovski - Featherweight Thriller',
-    event_type: 'MMA',
+    title: 'Golden State vs Boston - NBA Playoffs',
+    event_type: 'BASKETBALL',
     featured_image: 'https://images.unsplash.com/photo-1518611505868-d2b4f0ff69d5?w=400&h=300&fit=crop',
     ticket_price_cents: 6999,
   },
   {
     id: '8',
-    title: 'Oliveira vs Topuria - Lightweight Title',
-    event_type: 'MMA',
+    title: 'Luka Doncic - All Star Game',
+    event_type: 'BASKETBALL',
     featured_image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
     ticket_price_cents: 6499,
   },
   {
     id: '9',
-    title: 'Aspinall vs Blaydes - Heavyweight Title',
-    event_type: 'MMA',
+    title: 'Euroleague Finals - Europe\'s Top Basketball',
+    event_type: 'BASKETBALL',
     featured_image: 'https://images.unsplash.com/photo-1517836357463-d25ddfcbf042?w=400&h=300&fit=crop',
     ticket_price_cents: 6999,
   },
 ]
 
-const K1_EVENTS = [
+const TENNIS_EVENTS = [
   {
     id: '10',
-    title: 'Tenshin Nasukawa - Prime Time',
-    event_type: 'K-1',
+    title: 'Novak Djokovic - Australian Open',
+    event_type: 'TENNIS',
     featured_image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
     ticket_price_cents: 4999,
   },
   {
     id: '11',
-    title: 'Superbon vs Top Contender',
-    event_type: 'K-1',
+    title: 'Serena Williams - Monte Carlo Masters',
+    event_type: 'TENNIS',
     featured_image: 'https://images.unsplash.com/photo-1549719386-74dfaf00b721?w=400&h=300&fit=crop',
     ticket_price_cents: 4499,
   },
   {
     id: '12',
-    title: 'Rodtang - Flyweight Legend',
-    event_type: 'K-1',
+    title: 'French Open - Roland Garros',
+    event_type: 'TENNIS',
     featured_image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop',
     ticket_price_cents: 4999,
   },
@@ -183,15 +183,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Boxing Section */}
+      {/* Football Section */}
       <section className="py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-4xl font-black mb-2">BOXING</h2>
-              <p className="text-muted-foreground">Heavyweight title fights and elite matchups</p>
+              <h2 className="text-4xl font-black mb-2">FOOTBALL</h2>
+              <p className="text-muted-foreground">Elite matches and championship tournaments</p>
             </div>
-            <Link href="/events?sport=boxing">
+            <Link href="/events?sport=football">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                 View All
               </Button>
@@ -199,7 +199,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {BOXING_EVENTS.map((event) => (
+            {FEATURED_CATEGORY.map((event) => (
               <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
@@ -225,15 +225,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* MMA Section */}
+      {/* Basketball Section */}
       <section className="py-16 bg-secondary/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-4xl font-black mb-2">MMA</h2>
-              <p className="text-muted-foreground">Ultimate Fighting Championship events</p>
+              <h2 className="text-4xl font-black mb-2">BASKETBALL</h2>
+              <p className="text-muted-foreground">NBA, Euroleague, and international championship games</p>
             </div>
-            <Link href="/events?sport=mma">
+            <Link href="/events?sport=basketball">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                 View All
               </Button>
@@ -241,7 +241,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {MMA_EVENTS.map((event) => (
+            {BASKETBALL_EVENTS.map((event) => (
               <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
@@ -267,15 +267,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* K-1 Section */}
+      {/* Tennis Section */}
       <section className="py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-4xl font-black mb-2">K-1 KICKBOXING</h2>
-              <p className="text-muted-foreground">Technical striking mastery on display</p>
+              <h2 className="text-4xl font-black mb-2">TENNIS</h2>
+              <p className="text-muted-foreground">Grand Slam tournaments and championship matches</p>
             </div>
-            <Link href="/events?sport=k1">
+            <Link href="/events?sport=tennis">
               <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                 View All
               </Button>
@@ -283,7 +283,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {K1_EVENTS.map((event) => (
+            {TENNIS_EVENTS.map((event) => (
               <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
@@ -340,7 +340,7 @@ export default function HomePage() {
       {/* Why Choose Us */}
       <section className="py-16 bg-secondary/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-black mb-12 text-center">Why Choose Prime Fight</h2>
+          <h2 className="text-4xl font-black mb-12 text-center">Why Choose Sporteo.tv</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="text-5xl font-black text-primary mb-4">4K</div>
@@ -371,8 +371,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
-              <p className="font-black text-primary text-xl">PRIME FIGHT</p>
-              <p className="text-sm text-muted-foreground mt-2">Premium combat sports streaming</p>
+              <p className="font-black text-primary text-xl">SPORTEO.TV</p>
+              <p className="text-sm text-muted-foreground mt-2">Live sports streaming platform</p>
             </div>
             <div>
               <h4 className="font-bold mb-4">Platform</h4>
