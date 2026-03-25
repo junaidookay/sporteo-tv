@@ -177,11 +177,11 @@ export default function HomePage() {
             </div>
 
             {/* Secondary Featured Items */}
-            <div className="space-y-4">
+            <div className="space-y-4 h-96">
               {FEATURED_EVENTS.slice(1, 3).map((event) => (
                 <Link key={event.id} href={`/events/${event.id}`}>
-                  <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group">
-                    <div className="relative h-32 overflow-hidden">
+                  <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full">
+                    <div className="relative h-full min-h-[128px] overflow-hidden">
                       <img
                         src={event.featured_image}
                         alt={event.title}
@@ -462,8 +462,7 @@ export default function HomePage() {
             <Link href="/events">
               <Button
                 size="lg"
-                variant="outline"
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary font-bold"
+                className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-bold"
               >
                 Browse Events
               </Button>
@@ -493,7 +492,11 @@ export default function HomePage() {
               <p className="text-muted-foreground">Access to all events, live and replays included</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-black text-primary mb-4">��</div>
+              <div className="w-16 h-16 mx-auto mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
               <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
               <p className="text-muted-foreground">No buffering, no lag, premium stream quality</p>
             </div>
