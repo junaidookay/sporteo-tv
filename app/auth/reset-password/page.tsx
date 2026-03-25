@@ -10,7 +10,6 @@ import Link from 'next/link'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [password, setPassword] = useState('')
