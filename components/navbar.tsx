@@ -15,8 +15,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="font-black text-2xl text-primary">
-          SPORTEO.TV
+        <Link href="/" className="flex items-center">
+          <img src="/logo.png" alt="Sporteo.tv" className="h-8 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}

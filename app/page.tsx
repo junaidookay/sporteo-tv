@@ -177,11 +177,11 @@ export default function HomePage() {
             </div>
 
             {/* Secondary Featured Items */}
-            <div className="space-y-4 h-96">
+            <div className="grid grid-rows-2 gap-4 h-96">
               {FEATURED_EVENTS.slice(1, 3).map((event) => (
                 <Link key={event.id} href={`/events/${event.id}`}>
                   <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full">
-                    <div className="relative h-full min-h-[128px] overflow-hidden">
+                    <div className="relative h-full overflow-hidden">
                       <img
                         src={event.featured_image}
                         alt={event.title}
