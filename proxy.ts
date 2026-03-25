@@ -1,7 +1,7 @@
 import { updateSession } from '@/lib/supabase/proxy'
 import { type NextRequest, NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Redirect /protected to /dashboard
   if (request.nextUrl.pathname === '/protected') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
