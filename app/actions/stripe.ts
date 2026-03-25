@@ -3,10 +3,10 @@
 import { headers } from 'next/headers'
 
 import { stripe } from '../../lib/stripe'
-import { PRODUCTS } from '../../lib/products'
+import { SUBSCRIPTION_PLANS } from '../../lib/products'
 
 export async function startCheckoutSession(productId: string) {
-  const product = PRODUCTS.find((p) => p.id === productId)
+  const product = SUBSCRIPTION_PLANS.find((p) => p.id === productId)
   if (!product) {
     throw new Error(`Product with id "${productId}" not found`)
   }
