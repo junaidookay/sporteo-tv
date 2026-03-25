@@ -165,7 +165,7 @@ export default function SubscriptionsPage() {
             <div>
               <h3 className="text-xl font-bold mb-2">What devices can I watch on?</h3>
               <p className="text-muted-foreground">
-                You can watch on any device with our apps for iOS, Android, smart TVs, and web browsers.
+                You can watch on any device with our apps for iOS, Android, smart TVs, and web browsers. Please note: only one device can stream at a time per account.
               </p>
             </div>
           </div>
