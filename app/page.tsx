@@ -122,6 +122,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
+      {/* Watch Live Banner */}
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+                <span className="text-lg font-black">LIVE EVENTS</span>
+              </div>
+              <p className="text-primary-foreground/80 text-sm">2 events streaming right now</p>
+            </div>
+            <Link href="/live">
+              <Button className="bg-white text-primary hover:bg-white/90 font-black">
+                WATCH LIVE →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-background via-secondary to-background py-20 md:py-40">
         <div className="absolute inset-0 opacity-20">
@@ -179,6 +199,121 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Streams Section */}
+      <section className="py-16 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-y border-primary/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="w-3 h-3 bg-primary rounded-full animate-pulse"></span>
+                <h2 className="text-4xl font-black">LIVE NOW</h2>
+              </div>
+              <p className="text-muted-foreground">Watch premium events streaming live right now</p>
+            </div>
+            <Link href="/live">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold">
+                View All Live Events
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Live Event 1 */}
+            <Link href="/watch/1">
+              <Card className="overflow-hidden hover:border-primary transition-all cursor-pointer group relative">
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                  <span className="text-sm font-bold">LIVE</span>
+                </div>
+                <div className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold">
+                  2,547 watching
+                </div>
+                <div className="relative h-64 overflow-hidden bg-secondary">
+                  <img
+                    src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=500&h=400&fit=crop"
+                    alt="Live Event"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+                </div>
+                <div className="p-6">
+                  <span className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold mb-3">
+                    FOOTBALL
+                  </span>
+                  <h3 className="text-xl font-black mb-2 line-clamp-2">Champions League Final - Live</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Real Madrid vs Manchester City</p>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    WATCH NOW
+                  </Button>
+                </div>
+              </Card>
+            </Link>
+
+            {/* Live Event 2 */}
+            <Link href="/watch/2">
+              <Card className="overflow-hidden hover:border-primary transition-all cursor-pointer group relative">
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                  <span className="text-sm font-bold">LIVE</span>
+                </div>
+                <div className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold">
+                  1,823 watching
+                </div>
+                <div className="relative h-64 overflow-hidden bg-secondary">
+                  <img
+                    src="https://images.unsplash.com/photo-1518611505868-d2b4f0ff69d5?w=500&h=400&fit=crop"
+                    alt="Live Event"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+                </div>
+                <div className="p-6">
+                  <span className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold mb-3">
+                    BASKETBALL
+                  </span>
+                  <h3 className="text-xl font-black mb-2 line-clamp-2">NBA Finals Game 1 - Live</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Lakers vs Celtics</p>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    WATCH NOW
+                  </Button>
+                </div>
+              </Card>
+            </Link>
+
+            {/* Live Event 3 */}
+            <Link href="/watch/3">
+              <Card className="overflow-hidden hover:border-primary transition-all cursor-pointer group relative">
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                  <span className="text-sm font-bold">LIVE</span>
+                </div>
+                <div className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold">
+                  942 watching
+                </div>
+                <div className="relative h-64 overflow-hidden bg-secondary">
+                  <img
+                    src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500&h=400&fit=crop"
+                    alt="Live Event"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+                </div>
+                <div className="p-6">
+                  <span className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold mb-3">
+                    TENNIS
+                  </span>
+                  <h3 className="text-xl font-black mb-2 line-clamp-2">Wimbledon Semifinal - Live</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Top seeded players in action</p>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    WATCH NOW
+                  </Button>
+                </div>
+              </Card>
+            </Link>
           </div>
         </div>
       </section>
@@ -358,7 +493,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">Access to all events, live and replays included</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-black text-primary mb-4">⚡</div>
+              <div className="text-5xl font-black text-primary mb-4">��</div>
               <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
               <p className="text-muted-foreground">No buffering, no lag, premium stream quality</p>
             </div>
