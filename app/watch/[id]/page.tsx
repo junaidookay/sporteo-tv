@@ -20,12 +20,17 @@ export default function WatchPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [hasAccess, setHasAccess] = useState(false)
 
   useEffect(() => {
     const loadStreamData = async () => {
       try {
         // Get user
         const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          throw new Error('Not authenticated')
+        }
         setUser(user)
 
         // Get event
@@ -35,15 +40,30 @@ export default function WatchPage() {
         }
         setEvent(eventData)
 
-        // Check stream access
-        if (user && eventData) {
-          const access = await getStreamAccess(supabase, user.id, eventData.id)
-          if (!access && eventData.subscription_required) {
-            throw new Error('You do not have access to this stream')
-          }
+        // Generate unique device ID for this browser
+        let deviceId = localStorage.getItem('deviceId')
+        if (!deviceId) {
+          deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          localStorage.setItem('deviceId', deviceId)
         }
 
-        // Generate stream URL
+        // Create a stream session token (enforces one active device per user)
+        const sessionResponse = await fetch('/api/stream-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId, deviceId }),
+        })
+
+        if (!sessionResponse.ok) {
+          const data = await sessionResponse.json()
+          throw new Error(data.error || 'Failed to start stream session')
+        }
+
+        const { session } = await sessionResponse.json()
+        setSessionToken(session.session_token)
+        setHasAccess(true)
+
+        // Generate stream URL with session token
         if (eventData.bunny_stream_id) {
           const url = getHLSPlaybackUrl(eventData.bunny_stream_id)
           setStreamUrl(url)
@@ -55,6 +75,7 @@ export default function WatchPage() {
       } catch (err) {
         console.error('Failed to load stream:', err)
         setError(err instanceof Error ? err.message : 'Failed to load stream')
+        setHasAccess(false)
       } finally {
         setLoading(false)
       }

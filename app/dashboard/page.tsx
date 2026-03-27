@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [purchases, setPurchases] = useState<any[]>([])
   const [purchasedEvents, setPurchasedEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'history' | 'subscription' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'history' | 'subscription' | 'settings' | 'library'>('overview')
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -127,17 +127,23 @@ export default function DashboardPage() {
 
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 mb-8 border-b border-border pb-0">
-          {(['overview', 'events', 'history', 'subscription', 'settings'] as const).map((tab) => (
+          {[
+            { key: 'overview', label: 'Overview' },
+            { key: 'events', label: 'My Library' },
+            { key: 'history', label: 'Purchase History' },
+            { key: 'subscription', label: 'Subscription' },
+            { key: 'settings', label: 'Settings' },
+          ].map(({ key, label }) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={key}
+              onClick={() => setActiveTab(key as any)}
               className={`px-4 py-3 font-bold uppercase text-sm transition-colors border-b-2 ${
-                activeTab === tab
+                activeTab === key
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {label}
             </button>
           ))}
         </div>
@@ -224,9 +230,11 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* MY EVENTS TAB */}
+        {/* MY LIBRARY TAB */}
         {activeTab === 'events' && (
           <div>
+            <h2 className="text-2xl font-black mb-6">MY LIBRARY</h2>
+            <p className="text-muted-foreground mb-6">Events you have purchased - click to watch anytime</p>
             {purchasedEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {purchasedEvents.map((purchase) => (
@@ -282,6 +290,8 @@ export default function DashboardPage() {
         {/* PURCHASE HISTORY TAB */}
         {activeTab === 'history' && (
           <div>
+            <h2 className="text-2xl font-black mb-6">PURCHASE HISTORY</h2>
+            <p className="text-muted-foreground mb-6">All your purchases and transactions</p>
             {purchases.length > 0 ? (
               <Card className="border-border overflow-x-auto">
                 <table className="w-full">
