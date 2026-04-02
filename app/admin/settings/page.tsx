@@ -28,10 +28,18 @@ export default function SettingsPage() {
     maintenanceMode: false,
   })
 
+  const [stripeMode, setStripeMode] = useState<'test' | 'live'>('test')
+
   const [apiSettings, setApiSettings] = useState({
-    stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
-    stripeSecretKey: '',
-    stripeWebhookSecret: '',
+    // Test mode keys
+    stripeTestPublishableKey: '',
+    stripeTestSecretKey: '',
+    stripeTestWebhookSecret: '',
+    // Live mode keys
+    stripeLivePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    stripeLiveSecretKey: '',
+    stripeLiveWebhookSecret: '',
+    // Bunny settings
     bunnyApiKey: '',
     bunnyCdnHostname: process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME || '',
   })
@@ -315,49 +323,140 @@ export default function SettingsPage() {
                   </button>
 
                   {expandedSection === 'stripe' && (
-                    <div className="p-6 space-y-4 bg-background border-t border-border">
-                      <div>
-                        <label className="block text-sm font-bold mb-2">Stripe Publishable Key</label>
-                        <input
-                          type="text"
-                          name="stripePublishableKey"
-                          value={apiSettings.stripePublishableKey}
-                          onChange={handleApiSettingsChange}
-                          placeholder="pk_live_..."
-                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Developers → API Keys</p>
+                    <div className="p-6 space-y-6 bg-background border-t border-border">
+                      {/* Mode Toggle */}
+                      <div className="flex gap-4 items-center">
+                        <label className="text-sm font-bold">Mode:</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setStripeMode('test')}
+                            className={`px-4 py-2 rounded-lg font-bold transition-colors ${
+                              stripeMode === 'test'
+                                ? 'bg-orange-600/20 text-orange-600 border border-orange-600/50'
+                                : 'bg-secondary border border-border hover:border-orange-600/50'
+                            }`}
+                          >
+                            TEST MODE
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStripeMode('live')}
+                            className={`px-4 py-2 rounded-lg font-bold transition-colors ${
+                              stripeMode === 'live'
+                                ? 'bg-green-600/20 text-green-600 border border-green-600/50'
+                                : 'bg-secondary border border-border hover:border-green-600/50'
+                            }`}
+                          >
+                            LIVE MODE
+                          </button>
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-bold mb-2">Stripe Secret Key</label>
-                        <input
-                          type="password"
-                          name="stripeSecretKey"
-                          value={apiSettings.stripeSecretKey}
-                          onChange={handleApiSettingsChange}
-                          placeholder="sk_live_..."
-                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Keep this secret. Used for server-side operations only.</p>
-                      </div>
+                      {/* Warning for Live Mode */}
+                      {stripeMode === 'live' && (
+                        <div className="p-3 bg-red-600/10 border border-red-600/30 rounded-lg">
+                          <p className="text-xs text-red-600 font-bold">⚠️ LIVE MODE WARNING</p>
+                          <p className="text-xs text-red-600/80 mt-1">You are configuring LIVE Stripe keys. Real payments will be processed. Use test keys for development.</p>
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="block text-sm font-bold mb-2">Stripe Webhook Secret</label>
-                        <input
-                          type="password"
-                          name="stripeWebhookSecret"
-                          value={apiSettings.stripeWebhookSecret}
-                          onChange={handleApiSettingsChange}
-                          placeholder="whsec_..."
-                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Webhooks after adding endpoint</p>
-                      </div>
+                      {/* Test Mode Fields */}
+                      {stripeMode === 'test' && (
+                        <div className="space-y-4 p-4 bg-secondary/30 border border-orange-600/20 rounded-lg">
+                          <p className="text-sm font-bold text-orange-600">Test Mode Keys (Use pk_test_... and sk_test_...)</p>
+                          
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Test Publishable Key</label>
+                            <input
+                              type="text"
+                              name="stripeTestPublishableKey"
+                              value={apiSettings.stripeTestPublishableKey}
+                              onChange={handleApiSettingsChange}
+                              placeholder="pk_test_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Developers → API Keys (with "View test data" enabled)</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Test Secret Key</label>
+                            <input
+                              type="password"
+                              name="stripeTestSecretKey"
+                              value={apiSettings.stripeTestSecretKey}
+                              onChange={handleApiSettingsChange}
+                              placeholder="sk_test_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Keep this secret. Used for server-side operations only.</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Test Webhook Secret</label>
+                            <input
+                              type="password"
+                              name="stripeTestWebhookSecret"
+                              value={apiSettings.stripeTestWebhookSecret}
+                              onChange={handleApiSettingsChange}
+                              placeholder="whsec_test_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Webhooks after adding test endpoint</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live Mode Fields */}
+                      {stripeMode === 'live' && (
+                        <div className="space-y-4 p-4 bg-secondary/30 border border-green-600/20 rounded-lg">
+                          <p className="text-sm font-bold text-green-600">Live Mode Keys (Use pk_live_... and sk_live_...)</p>
+                          
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Live Publishable Key</label>
+                            <input
+                              type="text"
+                              name="stripeLivePublishableKey"
+                              value={apiSettings.stripeLivePublishableKey}
+                              onChange={handleApiSettingsChange}
+                              placeholder="pk_live_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Developers → API Keys (with "View live data" enabled)</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Live Secret Key</label>
+                            <input
+                              type="password"
+                              name="stripeLiveSecretKey"
+                              value={apiSettings.stripeLiveSecretKey}
+                              onChange={handleApiSettingsChange}
+                              placeholder="sk_live_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Keep this secret. Used for server-side operations only.</p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Live Webhook Secret</label>
+                            <input
+                              type="password"
+                              name="stripeLiveWebhookSecret"
+                              value={apiSettings.stripeLiveWebhookSecret}
+                              onChange={handleApiSettingsChange}
+                              placeholder="whsec_live_..."
+                              className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-600 font-mono text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Webhooks after adding live endpoint</p>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="p-3 bg-blue-600/10 border border-blue-600/30 rounded-lg">
                         <p className="text-xs text-blue-600 font-bold">Webhook Endpoint URL:</p>
                         <p className="text-xs font-mono text-blue-600/80 break-all">{typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/stripe` : 'https://yourdomain.com/api/webhooks/stripe'}</p>
+                        <p className="text-xs text-blue-600/80 mt-2">Use this URL when creating webhooks in Stripe Dashboard. Add it separately for both test and live modes.</p>
                       </div>
                     </div>
                   )}
