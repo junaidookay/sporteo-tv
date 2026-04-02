@@ -24,6 +24,8 @@ export default function ProfilePage() {
     bio: '',
     avatar_url: '',
   })
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -63,6 +65,40 @@ export default function ProfilePage() {
       ...prev,
       [name]: value,
     }))
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    try {
+      setUploadingAvatar(true)
+
+      // Create preview
+      const preview = URL.createObjectURL(file)
+      setAvatarPreview(preview)
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-avatar.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      setFormData((prev) => ({
+        ...prev,
+        avatar_url: data.publicUrl,
+      }))
+    } catch (err) {
+      console.error('Failed to upload avatar:', err)
+      setError('Failed to upload avatar')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,8 +173,8 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">User ID</p>
-                  <p className="font-mono text-sm break-all text-muted-foreground">{user.id}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Username</p>
+                  <p className="font-medium">{profile?.display_name || 'Not set'}</p>
                 </div>
 
                 <div>
@@ -181,18 +217,29 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="avatar_url" className="block text-sm font-bold mb-2">
-                    Avatar URL
+                  <label htmlFor="avatar" className="block text-sm font-bold mb-2">
+                    Avatar
                   </label>
-                  <input
-                    type="url"
-                    id="avatar_url"
-                    name="avatar_url"
-                    value={formData.avatar_url}
-                    onChange={handleInputChange}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <div className="space-y-3">
+                    {(avatarPreview || formData.avatar_url) && (
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-secondary border border-border">
+                        <img
+                          src={avatarPreview || formData.avatar_url}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      id="avatar"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
+                    />
+                    {uploadingAvatar && <p className="text-sm text-muted-foreground">Uploading...</p>}
+                  </div>
                 </div>
 
                 <div>

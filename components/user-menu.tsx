@@ -10,6 +10,7 @@ export function UserMenu() {
   const router = useRouter()
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -19,14 +20,15 @@ export function UserMenu() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       
-      // Check if user is admin
+      // Fetch profile data
       if (user) {
         const { data } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, display_name')
           .eq('id', user.id)
           .single()
         
+        setProfile(data)
         setIsAdmin(data?.is_admin || false)
       }
       
@@ -68,7 +70,7 @@ export function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary rounded-lg transition-colors flex items-center gap-2"
       >
-        <span>{user.email?.split('@')[0] || 'Account'}</span>
+        <span>{profile?.display_name || user.email?.split('@')[0] || 'Account'}</span>
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
@@ -77,8 +79,8 @@ export function UserMenu() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50">
           <div className="p-4 border-b border-border">
-            <p className="text-sm font-medium text-foreground">{user.email}</p>
-            <p className="text-xs text-muted-foreground mt-1">{user.id}</p>
+            <p className="text-sm font-medium text-foreground">{profile?.display_name || user.email}</p>
+            <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
           </div>
 
           <nav className="py-2">

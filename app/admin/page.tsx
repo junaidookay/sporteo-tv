@@ -32,10 +32,14 @@ export default function AdminDashboard() {
           return
         }
 
-        // Check if user is admin (this would need to be verified in your DB)
-        const isAdmin = user.user_metadata?.is_admin === true
+        // Check if user is admin from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
 
-        if (!isAdmin) {
+        if (profileError || !profile?.is_admin) {
           router.push('/')
           return
         }

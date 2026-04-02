@@ -467,13 +467,24 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold mb-2">Avatar URL</label>
-                  <input
-                    type="url"
-                    defaultValue={profile?.avatar_url || ''}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <label className="block text-sm font-bold mb-2">Avatar</label>
+                  <div className="space-y-3">
+                    {profile?.avatar_url && (
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-secondary border border-border">
+                        <img
+                          src={profile.avatar_url}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      placeholder="Upload avatar"
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    />
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
@@ -490,8 +501,8 @@ export default function DashboardPage() {
                   <p className="font-medium break-all">{user.email}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">User ID</p>
-                  <p className="font-mono text-xs text-muted-foreground break-all">{user.id}</p>
+                  <p className="text-muted-foreground mb-1">Username</p>
+                  <p className="font-medium">{profile?.display_name || 'Not set'}</p>
                 </div>
               </div>
               <Button
