@@ -25,17 +25,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        const { data: { user } } = await supabase.auth.getUser()
 
         if (error || !user) {
           router.push('/auth/login')
           return
         }
 
-        // Check if user is admin (this would need to be verified in your DB)
-        const isAdmin = user.user_metadata?.is_admin === true
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
 
-        if (!isAdmin) {
+        if (!profile?.is_admin) {
           router.push('/')
           return
         }
