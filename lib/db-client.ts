@@ -246,3 +246,45 @@ export async function updateEvent(
   if (error) throw error
   return data as Event
 }
+
+// Stream Sessions
+export async function getStreamSession(
+  supabase: SupabaseClient,
+  sessionToken: string
+) {
+  const { data, error } = await supabase
+    .from('stream_sessions')
+    .select('*')
+    .eq('session_token', sessionToken)
+    .eq('is_active', true)
+    .single()
+
+  if (error) throw error
+  return data as any
+}
+
+export async function getUserActiveSessions(
+  supabase: SupabaseClient,
+  userId: string
+) {
+  const { data, error } = await supabase
+    .from('stream_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+
+  if (error) throw error
+  return data as any[]
+}
+
+export async function endStreamSession(
+  supabase: SupabaseClient,
+  sessionId: string
+) {
+  const { error } = await supabase
+    .from('stream_sessions')
+    .update({ is_active: false })
+    .eq('id', sessionId)
+
+  if (error) throw error
+}
