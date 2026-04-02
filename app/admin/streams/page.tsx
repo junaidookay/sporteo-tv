@@ -28,8 +28,13 @@ export default function StreamsPage() {
           return
         }
 
-        const isAdmin = user.user_metadata?.is_admin === true
-        if (!isAdmin) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile?.is_admin) {
           router.push('/')
           return
         }
