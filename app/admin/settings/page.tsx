@@ -28,6 +28,16 @@ export default function SettingsPage() {
     maintenanceMode: false,
   })
 
+  const [apiSettings, setApiSettings] = useState({
+    stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
+    bunnyApiKey: '',
+    bunnyCdnHostname: process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME || '',
+  })
+
+  const [expandedSection, setExpandedSection] = useState<'stripe' | 'bunny' | null>(null)
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -64,13 +74,22 @@ export default function SettingsPage() {
     }))
   }
 
+  const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setApiSettings((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
     try {
-      // In a real app, you'd save these settings to a database table
+      // Save both platform and API settings to localStorage
       localStorage.setItem('platformSettings', JSON.stringify(settings))
+      localStorage.setItem('apiSettings', JSON.stringify(apiSettings))
       setSuccess('Settings saved successfully!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
@@ -276,28 +295,123 @@ export default function SettingsPage() {
               <h2 className="text-2xl font-black mb-6">INTEGRATIONS</h2>
 
               <div className="space-y-4">
-                <div className="p-4 bg-secondary/50 border border-border rounded-lg">
-                  <p className="font-bold mb-2">Stripe Integration</p>
-                  <p className="text-sm text-muted-foreground mb-3">Connected and active</p>
-                  <Button variant="outline" className="border-border hover:bg-secondary" size="sm">
-                    Manage Stripe Settings
-                  </Button>
+                {/* Stripe Settings */}
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSection(expandedSection === 'stripe' ? null : 'stripe')}
+                    className="w-full p-4 bg-secondary/50 hover:bg-secondary/70 transition-colors flex items-center justify-between"
+                  >
+                    <div className="text-left">
+                      <p className="font-bold">Stripe Integration</p>
+                      <p className="text-sm text-muted-foreground">Payment processing for PPV and subscriptions</p>
+                    </div>
+                    <span className="text-2xl font-bold text-muted-foreground">{expandedSection === 'stripe' ? '−' : '+'}</span>
+                  </button>
+
+                  {expandedSection === 'stripe' && (
+                    <div className="p-6 space-y-4 bg-background border-t border-border">
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Stripe Publishable Key</label>
+                        <input
+                          type="text"
+                          name="stripePublishableKey"
+                          value={apiSettings.stripePublishableKey}
+                          onChange={handleApiSettingsChange}
+                          placeholder="pk_live_..."
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Developers → API Keys</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Stripe Secret Key</label>
+                        <input
+                          type="password"
+                          name="stripeSecretKey"
+                          value={apiSettings.stripeSecretKey}
+                          onChange={handleApiSettingsChange}
+                          placeholder="sk_live_..."
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Keep this secret. Used for server-side operations only.</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Stripe Webhook Secret</label>
+                        <input
+                          type="password"
+                          name="stripeWebhookSecret"
+                          value={apiSettings.stripeWebhookSecret}
+                          onChange={handleApiSettingsChange}
+                          placeholder="whsec_..."
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Found in Stripe Dashboard → Webhooks after adding endpoint</p>
+                      </div>
+
+                      <div className="p-3 bg-blue-600/10 border border-blue-600/30 rounded-lg">
+                        <p className="text-xs text-blue-600 font-bold">Webhook Endpoint URL:</p>
+                        <p className="text-xs font-mono text-blue-600/80 break-all">{typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/stripe` : 'https://yourdomain.com/api/webhooks/stripe'}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-4 bg-secondary/50 border border-border rounded-lg">
-                  <p className="font-bold mb-2">Bunny.net Integration</p>
-                  <p className="text-sm text-muted-foreground mb-3">Stream and video hosting configured</p>
-                  <Button variant="outline" className="border-border hover:bg-secondary" size="sm">
-                    Manage Bunny.net Settings
-                  </Button>
-                </div>
+                {/* Bunny.net Settings */}
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSection(expandedSection === 'bunny' ? null : 'bunny')}
+                    className="w-full p-4 bg-secondary/50 hover:bg-secondary/70 transition-colors flex items-center justify-between"
+                  >
+                    <div className="text-left">
+                      <p className="font-bold">Bunny.net Integration</p>
+                      <p className="text-sm text-muted-foreground">Video streaming and CDN delivery</p>
+                    </div>
+                    <span className="text-2xl font-bold text-muted-foreground">{expandedSection === 'bunny' ? '−' : '+'}</span>
+                  </button>
 
-                <div className="p-4 bg-secondary/50 border border-border rounded-lg">
-                  <p className="font-bold mb-2">Supabase Integration</p>
-                  <p className="text-sm text-muted-foreground mb-3">Database and authentication configured</p>
-                  <Button variant="outline" className="border-border hover:bg-secondary" size="sm">
-                    Manage Supabase Settings
-                  </Button>
+                  {expandedSection === 'bunny' && (
+                    <div className="p-6 space-y-4 bg-background border-t border-border">
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Bunny.net API Key</label>
+                        <input
+                          type="password"
+                          name="bunnyApiKey"
+                          value={apiSettings.bunnyApiKey}
+                          onChange={handleApiSettingsChange}
+                          placeholder="Your Bunny.net API key"
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Found in Bunny.net Dashboard → Account Settings → API Key</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Bunny.net CDN Hostname</label>
+                        <input
+                          type="text"
+                          name="bunnyCdnHostname"
+                          value={apiSettings.bunnyCdnHostname}
+                          onChange={handleApiSettingsChange}
+                          placeholder="yourdomain.b-cdn.net"
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Your Bunny CDN pull zone hostname for video delivery</p>
+                      </div>
+
+                      <div className="p-3 bg-blue-600/10 border border-blue-600/30 rounded-lg">
+                        <p className="text-xs text-blue-600 font-bold">Setup Guide:</p>
+                        <ol className="text-xs text-blue-600/80 list-decimal list-inside mt-2 space-y-1">
+                          <li>Create a Bunny.net account and verify email</li>
+                          <li>Go to Bunny Streams and create a new stream</li>
+                          <li>Copy your Stream ID and RTMP key for event creation</li>
+                          <li>Add your CDN pull zone in Bunny Dashboard</li>
+                          <li>Save credentials here</li>
+                        </ol>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
