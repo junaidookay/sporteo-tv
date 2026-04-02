@@ -32,13 +32,13 @@ export default function AdminDashboard() {
           return
         }
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', user.id)
           .single()
 
-        if (!profile?.is_admin) {
+        if (profileError || !profile?.is_admin) {
           router.push('/')
           return
         }
