@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error } = await supabase.auth.getUser()
 
         if (error || !user) {
           router.push('/auth/login')
