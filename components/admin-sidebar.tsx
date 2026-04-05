@@ -27,7 +27,7 @@ export function AdminSidebar() {
     <aside className="w-64 bg-secondary border-r border-border min-h-screen sticky top-0">
       <div className="p-6">
         <Link href="/admin" className="text-xl font-black text-primary">
-          PRIME FIGHT
+          SPORTEO.TV
         </Link>
         <p className="text-xs text-muted-foreground mt-1">Admin Panel</p>
       </div>
