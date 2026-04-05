@@ -56,18 +56,29 @@ export default function SettingsPage() {
           return
         }
 
-        const { data: profile } = await supabase
+// Check if user is admin from profiles table
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', user.id)
           .single()
 
-        if (!profile?.is_admin) {
+        if (profileError || !profile?.is_admin) {
           router.push('/')
           return
         }
 
         setUser(user)
+        
+        // Load saved settings from localStorage
+        const savedApiSettings = localStorage.getItem('apiSettings')
+        if (savedApiSettings) {
+          try {
+            setApiSettings(JSON.parse(savedApiSettings))
+          } catch (e) {
+            console.error('Failed to parse saved API settings:', e)
+          }
+        }
       } catch (error) {
         console.error('Auth check failed:', error)
         router.push('/auth/login')
@@ -100,13 +111,29 @@ export default function SettingsPage() {
     setSaving(true)
 
     try {
+      // Validate that we have Stripe keys if in a mode
+      const modeKeys = stripeMode === 'test' 
+        ? { pub: apiSettings.stripeTestPublishableKey, sec: apiSettings.stripeTestSecretKey }
+        : { pub: apiSettings.stripeLivePublishableKey, sec: apiSettings.stripeLiveSecretKey }
+      
+      if (!modeKeys.pub || !modeKeys.sec) {
+        setSuccess('Please fill in both Publishable and Secret keys for the selected mode')
+        setSaving(false)
+        setTimeout(() => setSuccess(''), 4000)
+        return
+      }
+
       // Save both platform and API settings to localStorage
       localStorage.setItem('platformSettings', JSON.stringify(settings))
       localStorage.setItem('apiSettings', JSON.stringify(apiSettings))
-      setSuccess('Settings saved successfully!')
-      setTimeout(() => setSuccess(''), 3000)
+      localStorage.setItem('stripeMode', stripeMode)
+      
+      setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
+      setTimeout(() => setSuccess(''), 4000)
     } catch (error) {
       console.error('Failed to save settings:', error)
+      setSuccess('Error saving settings. Please try again.')
+      setTimeout(() => setSuccess(''), 4000)
     } finally {
       setSaving(false)
     }
