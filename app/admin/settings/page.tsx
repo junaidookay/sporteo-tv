@@ -6,7 +6,6 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getPlatformSettings, updatePlatformSetting } from '@/lib/db-client'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -71,40 +70,29 @@ export default function SettingsPage() {
 
         setUser(user)
         
-        // Load saved settings from database
-        const dbSettings = await getPlatformSettings(supabase)
-        if (dbSettings) {
-          // Update settings state with database values
-          setSettings((prev) => ({
-            ...prev,
-            platformName: dbSettings.platform_name || prev.platformName,
-            platformEmail: dbSettings.platform_email || prev.platformEmail,
-            defaultPPVPrice: String(dbSettings.default_ppv_price || 4999),
-            monthlySubPrice: String(dbSettings.monthly_sub_price || 999),
-            yearlySubPrice: String(dbSettings.yearly_sub_price || 9999),
-            maxConcurrentStreams: String(dbSettings.max_concurrent_streams || 4),
-            allowPPV: dbSettings.allow_ppv !== false,
-            allowSubscriptions: dbSettings.allow_subscriptions !== false,
-            maintenanceMode: dbSettings.maintenance_mode === true,
-          }))
-          
-          // Update API settings
-          setApiSettings((prev) => ({
-            ...prev,
-            stripeTestPublishableKey: dbSettings.stripe_test_publishable_key || '',
-            stripeTestSecretKey: dbSettings.stripe_test_secret_key || '',
-            stripeTestWebhookSecret: dbSettings.stripe_test_webhook_secret || '',
-            stripeLivePublishableKey: dbSettings.stripe_live_publishable_key || '',
-            stripeLiveSecretKey: dbSettings.stripe_live_secret_key || '',
-            stripeLiveWebhookSecret: dbSettings.stripe_live_webhook_secret || '',
-            bunnyApiKey: dbSettings.bunny_api_key || '',
-            bunnyCdnHostname: dbSettings.bunny_cdn_hostname || '',
-          }))
-          
-          // Set stripe mode
-          if (dbSettings.stripe_mode) {
-            setStripeMode(dbSettings.stripe_mode)
+        // Load saved settings from localStorage
+        const savedPlatformSettings = localStorage.getItem('platformSettings')
+        const savedApiSettings = localStorage.getItem('apiSettings')
+        const savedStripeMode = localStorage.getItem('stripeMode')
+        
+        if (savedPlatformSettings) {
+          try {
+            setSettings(JSON.parse(savedPlatformSettings))
+          } catch (e) {
+            console.error('Failed to parse platform settings:', e)
           }
+        }
+        
+        if (savedApiSettings) {
+          try {
+            setApiSettings(JSON.parse(savedApiSettings))
+          } catch (e) {
+            console.error('Failed to parse API settings:', e)
+          }
+        }
+        
+        if (savedStripeMode) {
+          setStripeMode(savedStripeMode as 'test' | 'live')
         }
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -133,12 +121,12 @@ export default function SettingsPage() {
     }))
   }
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
     try {
-      // Validate that we have Stripe keys if in a mode
+      // Validate that we have Stripe keys for the selected mode
       const modeKeys = stripeMode === 'test' 
         ? { pub: apiSettings.stripeTestPublishableKey, sec: apiSettings.stripeTestSecretKey }
         : { pub: apiSettings.stripeLivePublishableKey, sec: apiSettings.stripeLiveSecretKey }
@@ -150,34 +138,17 @@ export default function SettingsPage() {
         return
       }
 
-      // Save platform settings to database
-      await updatePlatformSetting(supabase, 'platform_name', settings.platformName)
-      await updatePlatformSetting(supabase, 'platform_email', settings.platformEmail)
-      await updatePlatformSetting(supabase, 'default_ppv_price', parseInt(settings.defaultPPVPrice))
-      await updatePlatformSetting(supabase, 'monthly_sub_price', parseInt(settings.monthlySubPrice))
-      await updatePlatformSetting(supabase, 'yearly_sub_price', parseInt(settings.yearlySubPrice))
-      await updatePlatformSetting(supabase, 'max_concurrent_streams', parseInt(settings.maxConcurrentStreams))
-      await updatePlatformSetting(supabase, 'allow_ppv', settings.allowPPV)
-      await updatePlatformSetting(supabase, 'allow_subscriptions', settings.allowSubscriptions)
-      await updatePlatformSetting(supabase, 'maintenance_mode', settings.maintenanceMode)
+      // Save to localStorage
+      localStorage.setItem('platformSettings', JSON.stringify(settings))
+      localStorage.setItem('apiSettings', JSON.stringify(apiSettings))
+      localStorage.setItem('stripeMode', stripeMode)
       
-      // Save API settings to database
-      await updatePlatformSetting(supabase, 'stripe_mode', stripeMode)
-      await updatePlatformSetting(supabase, 'stripe_test_publishable_key', apiSettings.stripeTestPublishableKey)
-      await updatePlatformSetting(supabase, 'stripe_test_secret_key', apiSettings.stripeTestSecretKey)
-      await updatePlatformSetting(supabase, 'stripe_test_webhook_secret', apiSettings.stripeTestWebhookSecret)
-      await updatePlatformSetting(supabase, 'stripe_live_publishable_key', apiSettings.stripeLivePublishableKey)
-      await updatePlatformSetting(supabase, 'stripe_live_secret_key', apiSettings.stripeLiveSecretKey)
-      await updatePlatformSetting(supabase, 'stripe_live_webhook_secret', apiSettings.stripeLiveWebhookSecret)
-      await updatePlatformSetting(supabase, 'bunny_api_key', apiSettings.bunnyApiKey)
-      await updatePlatformSetting(supabase, 'bunny_cdn_hostname', apiSettings.bunnyCdnHostname)
-      
-      setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode. All admins will see these changes.`)
-      setTimeout(() => setSuccess(''), 4000)
+      setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
+      setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
       console.error('Failed to save settings:', error)
       setSuccess('Error saving settings. Please try again.')
-      setTimeout(() => setSuccess(''), 4000)
+      setTimeout(() => setSuccess(''), 3000)
     } finally {
       setSaving(false)
     }
