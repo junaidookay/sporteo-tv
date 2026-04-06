@@ -288,3 +288,73 @@ export async function endStreamSession(
 
   if (error) throw error
 }
+
+// Platform Settings
+export async function getPlatformSetting(
+  supabase: SupabaseClient,
+  key: string
+) {
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .select('value, value_type')
+    .eq('key', key)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getPlatformSettings(
+  supabase: SupabaseClient
+) {
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .select('key, value, value_type')
+
+  if (error) throw error
+  
+  // Convert to object with proper types
+  const settings: Record<string, any> = {}
+  data?.forEach((setting: any) => {
+    let value: any = setting.value
+    if (setting.value_type === 'number') {
+      value = parseInt(setting.value, 10)
+    } else if (setting.value_type === 'boolean') {
+      value = setting.value === 'true'
+    } else if (setting.value_type === 'json') {
+      value = JSON.parse(setting.value)
+    }
+    settings[setting.key] = value
+  })
+  
+  return settings
+}
+
+export async function updatePlatformSetting(
+  supabase: SupabaseClient,
+  key: string,
+  value: string | number | boolean | object
+) {
+  let valueStr = String(value)
+  let valueType = 'string'
+  
+  if (typeof value === 'number') {
+    valueType = 'number'
+    valueStr = String(value)
+  } else if (typeof value === 'boolean') {
+    valueType = 'boolean'
+    valueStr = String(value)
+  } else if (typeof value === 'object') {
+    valueType = 'json'
+    valueStr = JSON.stringify(value)
+  }
+
+  const { data, error } = await supabase
+    .from('platform_settings')
+    .upsert({ key, value: valueStr, value_type: valueType })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}

@@ -41,13 +41,7 @@ export default function AdminEventsPage() {
           return
         }
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single()
-
-        if (!profile?.is_admin) {
+if (profileError || !profile?.is_admin) {
           router.push('/')
           return
         }
