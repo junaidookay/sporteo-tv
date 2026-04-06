@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import Checkout from '@/components/checkout'
 import { createClient } from '@/lib/supabase/client'
 import { getEventById, getPurchase, getUserSubscription } from '@/lib/db-client'
 
@@ -22,7 +21,6 @@ export default function EventDetailPage() {
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showCheckout, setShowCheckout] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -241,12 +239,11 @@ export default function EventDetailPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Pay per view: ${(event.ticket_price_cents / 100).toFixed(2)}
                   </p>
-                  <Button 
-                    onClick={() => setShowCheckout(true)}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    Buy Access
-                  </Button>
+                  <Link href={`/checkout/${eventId}`} className="w-full block">
+                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                      Buy Access
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -279,36 +276,6 @@ export default function EventDetailPage() {
           </div>
         </div>
       </main>
-
-      {/* Checkout Modal */}
-      {showCheckout && event && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-background border-border">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-black">Purchase Event</h2>
-                <button
-                  onClick={() => setShowCheckout(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-2">{event.title}</p>
-                <p className="text-3xl font-black text-primary">
-                  ${(event.ticket_price_cents / 100).toFixed(2)}
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <Checkout productId={eventId} />
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

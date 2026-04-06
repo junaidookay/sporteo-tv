@@ -1,15 +1,18 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { getStripeClient } from '@/lib/stripe'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
 export async function startCheckoutSession(productId: string) {
-  const supabase = createClient()
-
   let product = SUBSCRIPTION_PLANS.find((p) => p.id === productId)
 
   if (!product) {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+
     const { data: event, error } = await supabase
       .from('events')
       .select('id, title, ticket_price_cents')
