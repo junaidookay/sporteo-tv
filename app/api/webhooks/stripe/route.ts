@@ -37,8 +37,10 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         console.log('Checkout session completed:', session.id)
         console.log('Session metadata:', session.metadata)
+        console.log('Session mode:', session.mode)
+        console.log('Session subscription:', session.subscription)
+        console.log('Session payment_intent:', session.payment_intent)
         
-        // Get metadata
         const userId = session.metadata?.user_id
         const eventId = session.metadata?.event_id
         const subscriptionPlanId = session.metadata?.subscription_plan_id
@@ -48,21 +50,21 @@ export async function POST(req: Request) {
           break
         }
 
-        if (subscriptionPlanId) {
+        if (session.mode === 'subscription' && session.subscription) {
           console.log('Processing subscription purchase for user:', userId)
-          // Handle subscription purchase
           const subscription = await stripe.subscriptions.retrieve(
             session.subscription as string
           )
 
+          const planType = subscriptionPlanId?.includes('annual') ? 'annual' : 'monthly'
+
           const { error: subError } = await supabase.from('subscriptions').insert({
             user_id: userId,
             stripe_subscription_id: subscription.id,
-            plan_type: subscriptionPlanId.includes('annual') ? 'annual' : 'monthly',
-            price_cents: (subscription.items.data[0].price.unit_amount || 0),
+            subscription_type: planType,
             status: 'active',
-            current_period_start: new Date(subscription.current_period_start * 1000),
-            current_period_end: new Date(subscription.current_period_end * 1000),
+            start_date: new Date(subscription.current_period_start * 1000).toISOString(),
+            end_date: new Date(subscription.current_period_end * 1000).toISOString(),
           })
           
           if (subError) {
@@ -70,9 +72,8 @@ export async function POST(req: Request) {
           } else {
             console.log('Subscription recorded successfully')
           }
-        } else if (eventId && session.payment_intent) {
+        } else if (session.mode === 'payment' && eventId && session.payment_intent) {
           console.log('Processing PPV purchase for user:', userId, 'event:', eventId)
-          // Handle PPV purchase
           const paymentIntent = await stripe.paymentIntents.retrieve(
             session.payment_intent as string
           )
@@ -80,10 +81,10 @@ export async function POST(req: Request) {
           const { error: purchaseError } = await supabase.from('purchases').insert({
             user_id: userId,
             event_id: eventId,
-            stripe_charge_id: paymentIntent.charges.data[0]?.id,
-            amount_cents: (paymentIntent.amount_received || 0),
+            stripe_charge_id: paymentIntent.charges.data[0]?.id || null,
+            amount_paid_cents: paymentIntent.amount_received || 0,
+            purchase_date: new Date().toISOString(),
             status: 'completed',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
           })
 
           if (purchaseError) {
@@ -92,14 +93,13 @@ export async function POST(req: Request) {
             console.log('Purchase recorded successfully')
           }
 
-          // Create stream access
           const accessToken = crypto.randomUUID()
           const { error: accessError } = await supabase.from('stream_access').insert({
             user_id: userId,
             event_id: eventId,
             access_type: 'purchased',
             access_token: accessToken,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           })
           
           if (accessError) {
@@ -107,6 +107,11 @@ export async function POST(req: Request) {
           } else {
             console.log('Stream access created successfully')
           }
+        } else {
+          console.log('Unhandled checkout session type or missing data')
+          console.log('session.mode:', session.mode)
+          console.log('eventId:', eventId)
+          console.log('session.payment_intent:', session.payment_intent)
         }
         break
       }
@@ -114,34 +119,47 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
             status: subscription.status === 'active' ? 'active' : 'cancelled',
-            current_period_start: new Date(subscription.current_period_start * 1000),
-            current_period_end: new Date(subscription.current_period_end * 1000),
+            end_date: new Date(subscription.current_period_end * 1000).toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id)
+        
+        if (updateError) {
+          console.error('Error updating subscription:', updateError)
+        } else {
+          console.log('Subscription updated successfully')
+        }
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
 
-        await supabase
+        const { error: deleteError } = await supabase
           .from('subscriptions')
           .update({ status: 'cancelled' })
           .eq('stripe_subscription_id', subscription.id)
+        
+        if (deleteError) {
+          console.error('Error cancelling subscription:', deleteError)
+        }
         break
       }
 
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge
 
-        await supabase
+        const { error: refundError } = await supabase
           .from('purchases')
           .update({ status: 'refunded' })
           .eq('stripe_charge_id', charge.id)
+        
+        if (refundError) {
+          console.error('Error processing refund:', refundError)
+        }
         break
       }
 
