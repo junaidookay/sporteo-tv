@@ -34,10 +34,6 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         console.log('Checkout session completed:', session.id)
-        console.log('Session metadata:', session.metadata)
-        console.log('Session mode:', session.mode)
-        console.log('Session subscription:', session.subscription)
-        console.log('Session payment_intent:', session.payment_intent)
         
         const userId = session.metadata?.user_id
         const eventId = session.metadata?.event_id
@@ -50,7 +46,8 @@ export async function POST(req: Request) {
 
         if (session.mode === 'subscription' && session.subscription) {
           console.log('Processing subscription purchase for user:', userId)
-          const subscription = await stripe.subscriptions.retrieve(
+          
+          const subscriptionData = await stripe.subscriptions.retrieve(
             session.subscription as string
           )
 
@@ -58,11 +55,11 @@ export async function POST(req: Request) {
 
           const { error: subError } = await supabase.from('subscriptions').insert({
             user_id: userId,
-            stripe_subscription_id: subscription.id,
+            stripe_subscription_id: subscriptionData.id,
             subscription_type: planType,
             status: 'active',
-            start_date: new Date(subscription.current_period_start * 1000).toISOString(),
-            end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+            start_date: new Date(subscriptionData.current_period_start * 1000).toISOString(),
+            end_date: new Date(subscriptionData.current_period_end * 1000).toISOString(),
           })
           
           if (subError) {
@@ -72,15 +69,19 @@ export async function POST(req: Request) {
           }
         } else if (session.mode === 'payment' && eventId && session.payment_intent) {
           console.log('Processing PPV purchase for user:', userId, 'event:', eventId)
+          
           const paymentIntent = await stripe.paymentIntents.retrieve(
-            session.payment_intent as string
+            session.payment_intent as string,
+            { expand: ['latest_charge'] }
           )
+
+          const chargeId = (paymentIntent as any).latest_charge?.id || null
 
           const { error: purchaseError } = await supabase.from('purchases').insert({
             user_id: userId,
             event_id: eventId,
-            stripe_charge_id: paymentIntent.charges.data[0]?.id || null,
-            amount_paid_cents: paymentIntent.amount_received || 0,
+            stripe_charge_id: chargeId,
+            amount_paid_cents: paymentIntent.amount_received || paymentIntent.amount,
             purchase_date: new Date().toISOString(),
             status: 'completed',
           })
@@ -105,11 +106,6 @@ export async function POST(req: Request) {
           } else {
             console.log('Stream access created successfully')
           }
-        } else {
-          console.log('Unhandled checkout session type or missing data')
-          console.log('session.mode:', session.mode)
-          console.log('eventId:', eventId)
-          console.log('session.payment_intent:', session.payment_intent)
         }
         break
       }
@@ -127,8 +123,6 @@ export async function POST(req: Request) {
         
         if (updateError) {
           console.error('Error updating subscription:', updateError)
-        } else {
-          console.log('Subscription updated successfully')
         }
         break
       }
