@@ -8,36 +8,30 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import { Button } from '@/components/ui/button'
 
-import { startCheckoutSessionWithUser } from '@/app/actions/stripe'
+import { startCheckoutSession } from '../app/actions/stripe'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
-interface CheckoutProps {
-  productId: string
-  userId: string
-  autoStart?: boolean
-}
-
-export default function Checkout({ productId, userId, autoStart = false }: CheckoutProps) {
+export default function Checkout({ productId, autoStart = false }: { productId: string; autoStart?: boolean }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(autoStart)
-
-  const handleStartCheckout = useCallback(async () => {
-    setLoading(true)
-    try {
-      const secret = await startCheckoutSessionWithUser(productId, userId)
-      setClientSecret(secret)
-    } catch (error) {
-      console.error('Failed to start checkout:', error)
-      setLoading(false)
-    }
-  }, [productId, userId])
 
   useEffect(() => {
     if (autoStart) {
       handleStartCheckout()
     }
   }, [autoStart, productId])
+
+  const handleStartCheckout = useCallback(async () => {
+    setLoading(true)
+    try {
+      const secret = await startCheckoutSession(productId)
+      setClientSecret(secret)
+    } catch (error) {
+      console.error('Failed to start checkout:', error)
+      setLoading(false)
+    }
+  }, [productId])
 
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
 
@@ -56,7 +50,7 @@ export default function Checkout({ productId, userId, autoStart = false }: Check
   }
 
   return (
-    <Button
+    <Button 
       onClick={handleStartCheckout}
       disabled={loading}
       className="w-full bg-primary text-primary-foreground hover:bg-primary/90"

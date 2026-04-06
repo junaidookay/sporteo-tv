@@ -1,33 +1,45 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
-export async function startCheckoutSession(productId: string) {
-  throw new Error('This function has been deprecated. Use startCheckoutSessionWithUser instead.')
-}
-
-export async function startCheckoutSessionWithUser(productId: string, userId: string) {
-  const supabaseAdmin = createClient(
+async function getCurrentUser() {
+  const supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   )
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+export async function startCheckoutSession(productId: string) {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    throw new Error('You must be logged in to make a purchase')
+  }
 
   let product = SUBSCRIPTION_PLANS.find((p) => p.id === productId)
   let eventId: string | null = null
 
   if (!product) {
-    const { data: event, error } = await supabaseAdmin
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+    
+    const { data: event, error } = await supabase
       .from('events')
       .select('id, title, ticket_price_cents')
       .eq('id', productId)
       .single()
-
+    
     if (error || !event) {
       throw new Error(`Product with id "${productId}" not found`)
     }
-
+    
     eventId = event.id
     product = {
       id: event.id,
@@ -39,34 +51,29 @@ export async function startCheckoutSessionWithUser(productId: string, userId: st
 
   const isSubscription = productId.startsWith('sub_')
 
-  try {
-    const session = await stripe.checkout.sessions.create({
-      ui_mode: 'embedded',
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: product.name,
-              description: product.description,
-            },
-            unit_amount: product.priceInCents,
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: 'embedded',
+    redirect_on_completion: 'never',
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: product.name,
+            description: product.description,
           },
-          quantity: 1,
+          unit_amount: product.priceInCents,
         },
-      ],
-      mode: isSubscription ? 'subscription' : 'payment',
-      redirect_on_completion: 'never',
-      metadata: {
-        user_id: userId,
-        event_id: eventId || '',
-        subscription_plan_id: isSubscription ? productId : '',
+        quantity: 1,
       },
-    })
+    ],
+    mode: isSubscription ? 'subscription' : 'payment',
+    metadata: {
+      user_id: user.id,
+      event_id: eventId || '',
+      subscription_plan_id: isSubscription ? productId : '',
+    },
+  })
 
-    return session.client_secret
-  } catch (error) {
-    console.error('Stripe checkout error:', error)
-    throw new Error(`Checkout failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
+  return session.client_secret
 }
