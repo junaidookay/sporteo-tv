@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
 export async function startCheckoutSession(productId: string) {
@@ -38,29 +38,6 @@ export async function startCheckoutSessionWithUser(productId: string, userId: st
   }
 
   const isSubscription = productId.startsWith('sub_')
-
-  let secretKey = process.env.STRIPE_SECRET_KEY
-
-  if (!secretKey) {
-    const { data: settingsData, error } = await supabaseAdmin
-      .from('platform_settings')
-      .select('key, value')
-
-    if (!error && settingsData) {
-      const settings: Record<string, string> = {}
-      for (const row of settingsData) {
-        settings[row.key] = row.value
-      }
-      const mode = settings.stripe_mode || 'test'
-      secretKey = mode === 'live' ? settings.stripe_live_secret_key : settings.stripe_test_secret_key
-    }
-  }
-
-  if (!secretKey) {
-    throw new Error('Stripe secret key is not configured. Please add it in Admin Dashboard > Settings.')
-  }
-
-  const stripe = new Stripe(secretKey)
 
   try {
     const session = await stripe.checkout.sessions.create({
