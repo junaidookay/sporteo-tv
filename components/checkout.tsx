@@ -8,9 +8,7 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import { Button } from '@/components/ui/button'
 
-import { startCheckoutSession } from '../app/actions/stripe'
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+import { startCheckoutSession } from '@/app/actions/stripe'
 
 export default function Checkout({ productId }: { productId: string }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -32,7 +30,7 @@ export default function Checkout({ productId }: { productId: string }) {
     return (
       <div id="checkout">
         <EmbeddedCheckoutProvider
-          stripe={stripePromise}
+          stripe={loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')}
           options={{ clientSecret }}
         >
           <EmbeddedCheckout />
@@ -42,7 +40,7 @@ export default function Checkout({ productId }: { productId: string }) {
   }
 
   return (
-    <Button 
+    <Button
       onClick={handleStartCheckout}
       disabled={loading}
       className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
