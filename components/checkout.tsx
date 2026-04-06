@@ -8,25 +8,30 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import { Button } from '@/components/ui/button'
 
-import { startCheckoutSession } from '@/app/actions/stripe'
+import { startCheckoutSessionWithUser } from '@/app/actions/stripe'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
-export default function Checkout({ productId, autoStart = false }: { productId: string; autoStart?: boolean }) {
+interface CheckoutProps {
+  productId: string
+  userId: string
+}
+
+export default function Checkout({ productId, userId }: CheckoutProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleStartCheckout = useCallback(async () => {
     setLoading(true)
     try {
-      const secret = await startCheckoutSession(productId)
+      const secret = await startCheckoutSessionWithUser(productId, userId)
       setClientSecret(secret)
     } catch (error) {
       console.error('Failed to start checkout:', error)
     } finally {
       setLoading(false)
     }
-  }, [productId])
+  }, [productId, userId])
 
   if (clientSecret) {
     return (

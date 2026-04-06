@@ -13,27 +13,29 @@ export default function CheckoutPage() {
   const params = useParams()
   const productId = params.planId as string
   const [event, setEvent] = useState<any>(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   const plan = SUBSCRIPTION_PLANS.find((p) => p.id === productId)
 
   useEffect(() => {
-    if (!plan) {
-      const loadEvent = async () => {
-        try {
+    const loadData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+
+        if (!plan) {
           const eventData = await getEventById(supabase, productId)
           setEvent(eventData)
-        } catch (err) {
-          console.error('Failed to load event:', err)
-        } finally {
-          setLoading(false)
         }
+      } catch (err) {
+        console.error('Failed to load data:', err)
+      } finally {
+        setLoading(false)
       }
-      loadEvent()
-    } else {
-      setLoading(false)
     }
+    loadData()
   }, [productId, plan])
 
   if (loading) {
@@ -43,6 +45,25 @@ export default function CheckoutPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <Card className="p-8 border-border text-center">
             <p className="text-muted-foreground">Loading...</p>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <Card className="p-8 border-border text-center">
+            <h1 className="text-3xl font-black mb-4">Please Sign In</h1>
+            <p className="text-muted-foreground mb-6">You need to be signed in to make a purchase.</p>
+            <a href="/auth/login">
+              <button className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-bold">
+                Sign In
+              </button>
+            </a>
           </Card>
         </main>
       </div>
@@ -130,7 +151,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <Card className="p-8 border-border">
               <h3 className="text-2xl font-black mb-8">Complete Your Purchase</h3>
-              <Checkout productId={productId} />
+              <Checkout productId={productId} userId={user.id} />
             </Card>
           </div>
         </div>
