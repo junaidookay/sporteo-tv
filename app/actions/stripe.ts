@@ -54,23 +54,39 @@ export async function startCheckoutSession(productId: string) {
     const isSubscription = productId.startsWith('sub_')
     console.log('Creating Stripe session:', { isSubscription, mode: isSubscription ? 'subscription' : 'payment' })
 
-    const lineItems = [{
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: product.name,
-          description: product.description,
-        },
-        unit_amount: product.priceInCents,
-      },
-      quantity: 1,
-    }]
+    let lineItems: any[]
 
     if (isSubscription) {
       const billingPeriod = productId === 'sub_annual' ? 'year' : 'month'
-      ;(lineItems[0].price_data as any).recurring = {
-        interval: billingPeriod,
-      }
+      
+      lineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: product.name,
+            description: product.description,
+          },
+          unit_amount: product.priceInCents,
+          recurring: {
+            interval: billingPeriod,
+          },
+        },
+        quantity: 1,
+      }]
+      
+      console.log('Subscription line items:', JSON.stringify(lineItems))
+    } else {
+      lineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: product.name,
+            description: product.description,
+          },
+          unit_amount: product.priceInCents,
+        },
+        quantity: 1,
+      }]
     }
 
     const session = await stripe.checkout.sessions.create({
