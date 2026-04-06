@@ -27,7 +27,13 @@ export default function TransactionsPage() {
           return
         }
 
-if (profileError || !profile?.is_admin) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError || !profile?.is_admin) {
           router.push('/')
           return
         }
