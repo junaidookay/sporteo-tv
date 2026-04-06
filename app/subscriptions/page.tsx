@@ -1,118 +1,16 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
-import Checkout from '@/components/checkout'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
-import { Suspense } from 'react'
 
-function PlanSelection() {
-  const searchParams = useSearchParams()
-  const selectedPlan = searchParams.get('plan') || 'monthly'
+export default function SubscriptionsPage() {
+  const router = useRouter()
 
   const monthlyPlan = SUBSCRIPTION_PLANS.find((p) => p.id === 'sub_monthly')
   const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === 'sub_annual')
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Monthly Plan Card */}
-      <Card className={`p-8 flex flex-col border-border transition-all ${
-        selectedPlan === 'monthly' ? 'border-primary lg:col-span-2' : ''
-      }`}>
-        <h3 className="text-3xl font-black mb-4">MONTHLY PASS</h3>
-        <div className="mb-8">
-          <div className="text-5xl font-black text-primary">$9.99</div>
-          <div className="text-muted-foreground mt-2">per month, cancel anytime</div>
-        </div>
-
-        <ul className="space-y-4 mb-8 flex-1">
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Unlimited access to all events</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>HD video quality (1080p)</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Watch on phone, tablet, or TV</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Ad-free streaming</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Watch offline (coming soon)</span>
-          </li>
-        </ul>
-
-        {selectedPlan === 'monthly' && monthlyPlan ? (
-          <div className="mt-8 pt-8 border-t border-border">
-            <Checkout productId={monthlyPlan.id} />
-          </div>
-        ) : (
-          <div className="text-center text-muted-foreground text-sm">
-            Select monthly to subscribe
-          </div>
-        )}
-      </Card>
-
-      {/* Annual Plan Card */}
-      <Card className={`p-8 flex flex-col border-primary bg-primary/5 transition-all ${
-        selectedPlan === 'annual' ? 'lg:col-span-2 order-first lg:order-last' : ''
-      }`}>
-        <div className="mb-4">
-          <span className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-black">
-            SAVE 17%
-          </span>
-        </div>
-        <h3 className="text-3xl font-black mb-4">ANNUAL PASS</h3>
-        <div className="mb-8">
-          <div className="text-5xl font-black text-primary">$99.99</div>
-          <div className="text-muted-foreground mt-2">per year</div>
-        </div>
-
-        <ul className="space-y-4 mb-8 flex-1">
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Everything in Monthly</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>4K video quality</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Priority customer support</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Early access to premium events</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-primary text-xl">✓</span>
-            <span>Exclusive member community</span>
-          </li>
-        </ul>
-
-        {selectedPlan === 'annual' && annualPlan ? (
-          <div className="mt-8 pt-8 border-t border-border">
-            <Checkout productId={annualPlan.id} />
-          </div>
-        ) : (
-          <div className="text-center text-muted-foreground text-sm">
-            Select annual to subscribe
-          </div>
-        )}
-      </Card>
-    </div>
-  )
-}
-
-export default function SubscriptionsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
@@ -125,9 +23,102 @@ export default function SubscriptionsPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="text-center py-12">Loading plans...</div>}>
-          <PlanSelection />
-        </Suspense>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Monthly Plan Card */}
+          <Card
+            className="p-8 flex flex-col border-border hover:border-primary transition-all cursor-pointer"
+            onClick={() => router.push('/checkout/sub_monthly')}
+          >
+            <h3 className="text-3xl font-black mb-4">MONTHLY PASS</h3>
+            <div className="mb-8">
+              <div className="text-5xl font-black text-primary">$9.99</div>
+              <div className="text-muted-foreground mt-2">per month, cancel anytime</div>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Unlimited access to all events</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>HD video quality (1080p)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Watch on phone, tablet, or TV</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Ad-free streaming</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Watch offline (coming soon)</span>
+              </li>
+            </ul>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push('/checkout/sub_monthly')
+              }}
+              className="mt-8 w-full py-3 rounded-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Get Started
+            </button>
+          </Card>
+
+          {/* Annual Plan Card */}
+          <Card
+            className="p-8 flex flex-col border-primary bg-primary/5 hover:border-primary transition-all cursor-pointer"
+            onClick={() => router.push('/checkout/sub_annual')}
+          >
+            <div className="mb-4">
+              <span className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-black">
+                SAVE 17%
+              </span>
+            </div>
+            <h3 className="text-3xl font-black mb-4">ANNUAL PASS</h3>
+            <div className="mb-8">
+              <div className="text-5xl font-black text-primary">$99.99</div>
+              <div className="text-muted-foreground mt-2">per year</div>
+            </div>
+
+            <ul className="space-y-4 mb-8 flex-1">
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Everything in Monthly</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>4K video quality</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Priority customer support</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Early access to premium events</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary text-xl">✓</span>
+                <span>Exclusive member community</span>
+              </li>
+            </ul>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push('/checkout/sub_annual')
+              }}
+              className="mt-8 w-full py-3 rounded-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Get Started
+            </button>
+          </Card>
+        </div>
 
         {/* FAQ Section */}
         <div className="mt-20 pt-20 border-t border-border">
