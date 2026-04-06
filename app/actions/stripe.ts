@@ -22,6 +22,7 @@ export async function startCheckoutSession(productId: string) {
     console.log('Product found in plans:', !!product)
     
     let eventId: string | null = null
+    let priceId: string | null = null
 
     if (!product) {
       const supabaseAdmin = createSupabaseClient(
@@ -59,22 +60,26 @@ export async function startCheckoutSession(productId: string) {
     if (isSubscription) {
       const billingPeriod = productId === 'sub_annual' ? 'year' : 'month'
       
-      lineItems = [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: product.name,
-            description: product.description,
-          },
-          unit_amount: product.priceInCents,
-          recurring: {
-            interval: billingPeriod,
-          },
+      const price = await stripe.prices.create({
+        currency: 'usd',
+        unit_amount: product.priceInCents,
+        recurring: {
+          interval: billingPeriod,
         },
+        product_data: {
+          name: product.name,
+          description: product.description,
+        },
+      })
+      
+      priceId = price.id
+      
+      lineItems = [{
+        price: priceId,
         quantity: 1,
       }]
       
-      console.log('Subscription line items:', JSON.stringify(lineItems))
+      console.log('Created price:', priceId)
     } else {
       lineItems = [{
         price_data: {
