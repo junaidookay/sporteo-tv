@@ -6,6 +6,7 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { loadSettings, saveSettings, type LoadedSettings } from '@/app/actions/settings'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -16,32 +17,19 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState('')
 
-  const [settings, setSettings] = useState({
-    platformName: 'Sporteo.tv',
-    platformEmail: 'support@sporteo.tv',
-    defaultPPVPrice: '4999',
-    monthlySubPrice: '999',
-    yearlySubPrice: '9999',
-    maxConcurrentStreams: '4',
-    allowPPV: true,
-    allowSubscriptions: true,
-    maintenanceMode: false,
-  })
+  const [settings, setSettings] = useState<LoadedSettings | null>(null)
 
   const [stripeMode, setStripeMode] = useState<'test' | 'live'>('test')
 
   const [apiSettings, setApiSettings] = useState({
-    // Test mode keys
     stripeTestPublishableKey: '',
     stripeTestSecretKey: '',
     stripeTestWebhookSecret: '',
-    // Live mode keys
-    stripeLivePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    stripeLivePublishableKey: '',
     stripeLiveSecretKey: '',
     stripeLiveWebhookSecret: '',
-    // Bunny settings
     bunnyApiKey: '',
-    bunnyCdnHostname: process.env.NEXT_PUBLIC_BUNNY_CDN_HOSTNAME || '',
+    bunnyCdnHostname: '',
   })
 
   const [expandedSection, setExpandedSection] = useState<'stripe' | 'bunny' | null>(null)
@@ -69,30 +57,24 @@ export default function SettingsPage() {
         }
 
         setUser(user)
-        
-        // Load saved settings from localStorage
-        const savedPlatformSettings = localStorage.getItem('platformSettings')
-        const savedApiSettings = localStorage.getItem('apiSettings')
-        const savedStripeMode = localStorage.getItem('stripeMode')
-        
-        if (savedPlatformSettings) {
-          try {
-            setSettings(JSON.parse(savedPlatformSettings))
-          } catch (e) {
-            console.error('Failed to parse platform settings:', e)
-          }
-        }
-        
-        if (savedApiSettings) {
-          try {
-            setApiSettings(JSON.parse(savedApiSettings))
-          } catch (e) {
-            console.error('Failed to parse API settings:', e)
-          }
-        }
-        
-        if (savedStripeMode) {
-          setStripeMode(savedStripeMode as 'test' | 'live')
+
+        // Load saved settings from database
+        try {
+          const loaded = await loadSettings()
+          setSettings(loaded)
+          setApiSettings({
+            stripeTestPublishableKey: loaded.stripeTestPublishableKey,
+            stripeTestSecretKey: loaded.stripeTestSecretKey,
+            stripeTestWebhookSecret: loaded.stripeTestWebhookSecret,
+            stripeLivePublishableKey: loaded.stripeLivePublishableKey,
+            stripeLiveSecretKey: loaded.stripeLiveSecretKey,
+            stripeLiveWebhookSecret: loaded.stripeLiveWebhookSecret,
+            bunnyApiKey: loaded.bunnyApiKey,
+            bunnyCdnHostname: loaded.bunnyCdnHostname,
+          })
+          setStripeMode(loaded.stripeMode)
+        } catch (e) {
+          console.error('Failed to load settings from DB:', e)
         }
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -106,11 +88,12 @@ export default function SettingsPage() {
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!settings) return
     const { name, value, type } = e.target as any
-    setSettings((prev) => ({
+    setSettings((prev) => prev ? ({
       ...prev,
-      [name]: type === 'checkbox' ? !prev[name as keyof typeof settings] : value,
-    }))
+      [name]: type === 'checkbox' ? !prev[name as keyof typeof prev] : value,
+    }) : prev)
   }
 
   const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,8 +104,9 @@ export default function SettingsPage() {
     }))
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!settings) return
     setSaving(true)
 
     try {
@@ -138,23 +122,21 @@ export default function SettingsPage() {
         return
       }
 
-      // Save to localStorage
-      localStorage.setItem('platformSettings', JSON.stringify(settings))
-      localStorage.setItem('apiSettings', JSON.stringify(apiSettings))
-      localStorage.setItem('stripeMode', stripeMode)
-      
-      setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (error) {
-      console.error('Failed to save settings:', error)
-      setSuccess('Error saving settings. Please try again.')
-      setTimeout(() => setSuccess(''), 3000)
-    } finally {
-      setSaving(false)
+      // Save to database
+      try {
+        await saveSettings(settings, { ...apiSettings, stripeMode })
+        setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
+      } catch (error) {
+        console.error('Failed to save settings:', error)
+        setSuccess('Error saving settings. Please try again.')
+      } finally {
+        setSaving(false)
+        setTimeout(() => setSuccess(''), 3000)
+      }
     }
   }
 
-  if (loading) {
+  if (loading || !settings) {
     return (
       <div className="flex h-screen bg-background text-foreground">
         <AdminSidebar />

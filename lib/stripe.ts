@@ -1,8 +1,15 @@
-import 'server-only'
 import Stripe from 'stripe'
+import 'server-only'
+import { createClient } from '@/lib/supabase/server'
+import { getStripeSettings } from '@/lib/settings'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+export async function getStripeClient() {
+  const supabase = await createClient()
+  const { secretKey } = await getStripeSettings(supabase)
+
+  if (!secretKey) {
+    throw new Error('Stripe secret key not configured. Please add it in Admin Dashboard > Settings.')
+  }
+
+  return new Stripe(secretKey)
 }
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)

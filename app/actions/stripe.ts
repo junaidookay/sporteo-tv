@@ -1,7 +1,7 @@
 'use server'
 
-import { stripe } from '../../lib/stripe'
-import { SUBSCRIPTION_PLANS } from '../../lib/products'
+import { getStripeClient } from '@/lib/stripe'
+import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
 export async function startCheckoutSession(productId: string) {
   const product = SUBSCRIPTION_PLANS.find((p) => p.id === productId)
@@ -10,6 +10,7 @@ export async function startCheckoutSession(productId: string) {
   }
 
   try {
+    const stripe = await getStripeClient()
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       line_items: [
