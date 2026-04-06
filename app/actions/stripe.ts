@@ -1,23 +1,16 @@
 'use server'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
 
-async function getCurrentUser() {
-  const supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  )
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
-
 export async function startCheckoutSession(productId: string) {
-  const user = await getCurrentUser()
+  const supabase = await createClient()
   
-  if (!user) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
     throw new Error('You must be logged in to make a purchase')
   }
 
@@ -25,12 +18,12 @@ export async function startCheckoutSession(productId: string) {
   let eventId: string | null = null
 
   if (!product) {
-    const supabase = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    const { data: event, error } = await supabase
+    const { data: event, error } = await supabaseAdmin
       .from('events')
       .select('id, title, ticket_price_cents')
       .eq('id', productId)
