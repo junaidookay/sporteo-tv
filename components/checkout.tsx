@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useMemo } from 'react'
+import { useCallback, useState, useMemo, useEffect } from 'react'
 import {
   EmbeddedCheckout,
   EmbeddedCheckoutProvider,
@@ -15,11 +15,12 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 interface CheckoutProps {
   productId: string
   userId: string
+  autoStart?: boolean
 }
 
-export default function Checkout({ productId, userId }: CheckoutProps) {
+export default function Checkout({ productId, userId, autoStart = false }: CheckoutProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(autoStart)
 
   const handleStartCheckout = useCallback(async () => {
     setLoading(true)
@@ -28,10 +29,15 @@ export default function Checkout({ productId, userId }: CheckoutProps) {
       setClientSecret(secret)
     } catch (error) {
       console.error('Failed to start checkout:', error)
-    } finally {
       setLoading(false)
     }
   }, [productId, userId])
+
+  useEffect(() => {
+    if (autoStart) {
+      handleStartCheckout()
+    }
+  }, [autoStart, productId])
 
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
 
