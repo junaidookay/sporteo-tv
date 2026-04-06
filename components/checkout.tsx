@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import {
   EmbeddedCheckout,
   EmbeddedCheckoutProvider,
@@ -33,12 +33,15 @@ export default function Checkout({ productId, userId }: CheckoutProps) {
     }
   }, [productId, userId])
 
+  const options = useMemo(() => ({ clientSecret }), [clientSecret])
+
   if (clientSecret) {
     return (
-      <div id="checkout">
+      <div id="checkout" className="w-full bg-[#1A1A1A] rounded-lg p-6">
         <EmbeddedCheckoutProvider
+          key={clientSecret}
           stripe={stripePromise}
-          options={{ clientSecret }}
+          options={options}
         >
           <EmbeddedCheckout />
         </EmbeddedCheckoutProvider>
