@@ -109,30 +109,26 @@ export default function SettingsPage() {
     if (!settings) return
     setSaving(true)
 
-    try {
-      // Validate that we have Stripe keys for the selected mode
-      const modeKeys = stripeMode === 'test' 
-        ? { pub: apiSettings.stripeTestPublishableKey, sec: apiSettings.stripeTestSecretKey }
-        : { pub: apiSettings.stripeLivePublishableKey, sec: apiSettings.stripeLiveSecretKey }
-      
-      if (!modeKeys.pub || !modeKeys.sec) {
-        setSuccess('Please fill in both Publishable and Secret keys for the selected mode')
-        setSaving(false)
-        setTimeout(() => setSuccess(''), 4000)
-        return
-      }
+    const modeKeys = stripeMode === 'test'
+      ? { pub: apiSettings.stripeTestPublishableKey, sec: apiSettings.stripeTestSecretKey }
+      : { pub: apiSettings.stripeLivePublishableKey, sec: apiSettings.stripeLiveSecretKey }
 
-      // Save to database
-      try {
-        await saveSettings(settings, { ...apiSettings, stripeMode })
-        setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
-      } catch (error) {
-        console.error('Failed to save settings:', error)
-        setSuccess('Error saving settings. Please try again.')
-      } finally {
-        setSaving(false)
-        setTimeout(() => setSuccess(''), 3000)
-      }
+    if (!modeKeys.pub || !modeKeys.sec) {
+      setSuccess('Please fill in both Publishable and Secret keys for the selected mode')
+      setSaving(false)
+      setTimeout(() => setSuccess(''), 4000)
+      return
+    }
+
+    try {
+      await saveSettings(settings, { ...apiSettings, stripeMode })
+      setSuccess(`Settings saved successfully! Using ${stripeMode.toUpperCase()} mode.`)
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      setSuccess('Error saving settings. Please try again.')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSuccess(''), 3000)
     }
   }
 
