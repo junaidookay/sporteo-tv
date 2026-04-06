@@ -21,6 +21,7 @@ export default function AdminDashboard() {
     completedEvents: 0,
     upcomingEvents: 0,
   })
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -122,16 +123,31 @@ export default function AdminDashboard() {
           <Card className="p-8 border-border mb-8">
             <h2 className="text-2xl font-black mb-6">QUICK ACTIONS</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button 
+                onClick={() => router.push('/admin/events')}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 Create Event
               </Button>
-              <Button variant="outline" className="border-border hover:bg-secondary">
+              <Button 
+                onClick={() => router.push('/admin/events')}
+                variant="outline" 
+                className="border-border hover:bg-secondary"
+              >
                 Create Stream
               </Button>
-              <Button variant="outline" className="border-border hover:bg-secondary">
+              <Button 
+                onClick={() => router.push('/admin/analytics')}
+                variant="outline" 
+                className="border-border hover:bg-secondary"
+              >
                 View Analytics
               </Button>
-              <Button variant="outline" className="border-border hover:bg-secondary">
+              <Button 
+                onClick={() => router.push('/admin/users')}
+                variant="outline" 
+                className="border-border hover:bg-secondary"
+              >
                 Manage Users
               </Button>
             </div>
@@ -164,7 +180,12 @@ export default function AdminDashboard() {
                     }`}>
                       {event.status}
                     </span>
-                    <Button size="sm" variant="outline" className="border-border hover:bg-secondary">
+                    <Button 
+                      size="sm" 
+                      onClick={() => router.push(`/admin/events?edit=${event.id}`)}
+                      variant="outline" 
+                      className="border-border hover:bg-secondary"
+                    >
                       Edit
                     </Button>
                   </div>
