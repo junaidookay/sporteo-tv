@@ -46,7 +46,7 @@ export default function DashboardPage() {
           .from('purchases')
           .select('*')
           .eq('user_id', user.id)
-          .order('purchase_date', { ascending: false })
+          .order('created_at', { ascending: false })
 
         if (!purchaseError && purchaseData) {
           setPurchases(purchaseData)

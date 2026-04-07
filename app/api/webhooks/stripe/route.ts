@@ -33,7 +33,6 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        console.log('Checkout session completed:', session.id)
         
         const userId = session.metadata?.user_id
         const eventId = session.metadata?.event_id
@@ -56,10 +55,11 @@ export async function POST(req: Request) {
           const { error: subError } = await supabase.from('subscriptions').insert({
             user_id: userId,
             stripe_subscription_id: subscriptionData.id,
+            stripe_customer_id: subscriptionData.customer as string,
             subscription_type: planType,
             status: 'active',
-            start_date: new Date(subscriptionData.current_period_start * 1000).toISOString(),
-            end_date: new Date(subscriptionData.current_period_end * 1000).toISOString(),
+            current_period_start: new Date(subscriptionData.current_period_start * 1000),
+            current_period_end: new Date(subscriptionData.current_period_end * 1000),
           })
           
           if (subError) {
@@ -71,18 +71,14 @@ export async function POST(req: Request) {
           console.log('Processing PPV purchase for user:', userId, 'event:', eventId)
           
           const paymentIntent = await stripe.paymentIntents.retrieve(
-            session.payment_intent as string,
-            { expand: ['latest_charge'] }
+            session.payment_intent as string
           )
-
-          const chargeId = (paymentIntent as any).latest_charge?.id || null
 
           const { error: purchaseError } = await supabase.from('purchases').insert({
             user_id: userId,
             event_id: eventId,
-            stripe_charge_id: chargeId,
-            amount_paid_cents: paymentIntent.amount_received || paymentIntent.amount,
-            purchase_date: new Date().toISOString(),
+            stripe_payment_intent_id: paymentIntent.id,
+            amount_cents: paymentIntent.amount_received || paymentIntent.amount,
             status: 'completed',
           })
 
@@ -93,16 +89,16 @@ export async function POST(req: Request) {
           }
 
           const accessToken = crypto.randomUUID()
-          const { error: accessError } = await supabase.from('stream_access').insert({
+          const { error: streamError } = await supabase.from('streams').insert({
             user_id: userId,
             event_id: eventId,
             access_type: 'purchased',
             access_token: accessToken,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           })
           
-          if (accessError) {
-            console.error('Error creating stream access:', accessError)
+          if (streamError) {
+            console.error('Error creating stream access:', streamError)
           } else {
             console.log('Stream access created successfully')
           }
@@ -117,7 +113,7 @@ export async function POST(req: Request) {
           .from('subscriptions')
           .update({
             status: subscription.status === 'active' ? 'active' : 'cancelled',
-            end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000),
           })
           .eq('stripe_subscription_id', subscription.id)
         
@@ -147,7 +143,7 @@ export async function POST(req: Request) {
         const { error: refundError } = await supabase
           .from('purchases')
           .update({ status: 'refunded' })
-          .eq('stripe_charge_id', charge.id)
+          .eq('stripe_payment_intent_id', charge.payment_intent as string)
         
         if (refundError) {
           console.error('Error processing refund:', refundError)

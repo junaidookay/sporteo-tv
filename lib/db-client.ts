@@ -35,9 +35,9 @@ export interface Purchase {
   id: string
   user_id: string
   event_id: string
-  purchase_date: string
-  amount_paid_cents: number
-  stripe_charge_id: string | null
+  stripe_payment_intent_id: string | null
+  status: string
+  amount_cents: number
   created_at: string
   updated_at: string
 }
@@ -45,11 +45,12 @@ export interface Purchase {
 export interface Subscription {
   id: string
   user_id: string
-  subscription_type: 'monthly' | 'annual'
+  subscription_type: string
   stripe_subscription_id: string | null
-  status: 'active' | 'inactive' | 'cancelled'
-  start_date: string
-  end_date: string | null
+  stripe_customer_id: string | null
+  status: string
+  current_period_start: string
+  current_period_end: string | null
   created_at: string
   updated_at: string
 }
@@ -173,7 +174,7 @@ export async function getUserPurchases(
     .from('purchases')
     .select('*')
     .eq('user_id', userId)
-    .order('purchase_date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) throw error
   return data as Purchase[]
