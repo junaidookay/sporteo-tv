@@ -2,14 +2,40 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { UserMenu } from '@/components/user-menu'
 import { Menu, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export function Navbar() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    async function checkSubscription() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data } = await supabase
+            .from('subscriptions')
+            .select('status')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle()
+          setIsSubscribed(!!data)
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkSubscription()
+  }, [])
 
   const isActive = (path: string) => pathname === path
 
@@ -18,7 +44,7 @@ export function Navbar() {
     { href: '/live', label: 'LIVE', isLive: true },
     { href: '/events', label: 'EVENTS' },
     { href: '/replays', label: 'REPLAYS' },
-    { href: '/subscriptions', label: 'SUBSCRIBE' },
+    ...(loading || !isSubscribed ? [{ href: '/subscriptions', label: 'SUBSCRIBE' }] : []),
   ]
 
   return (

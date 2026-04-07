@@ -57,7 +57,7 @@ export default function TransactionsPage() {
       const { data: purchases, error: purchaseError } = await supabase
         .from('purchases')
         .select('*')
-        .order('purchase_date', { ascending: false })
+        .order('created_at', { ascending: false })
 
       // Load subscriptions
       const { data: subscriptions, error: subscriptionError } = await supabase
@@ -66,18 +66,20 @@ export default function TransactionsPage() {
         .order('created_at', { ascending: false })
 
       if (!purchaseError && purchases) {
-        const purchaseTransactions = purchases.map((p) => ({
+        const purchaseTransactions = (purchases || []).map((p) => ({
           ...p,
           type: 'purchase',
-          date: p.purchase_date,
+          date: p.created_at,
           amount: p.amount_cents,
+          reference: p.stripe_payment_intent_id,
         }))
 
         const subscriptionTransactions = (subscriptions || []).map((s) => ({
           ...s,
           type: 'subscription',
           date: s.created_at,
-          amount: s.price_cents,
+          amount: 0, // Subscriptions don't have a direct amount in this table
+          reference: s.stripe_subscription_id,
         }))
 
         const allTransactions = [...purchaseTransactions, ...subscriptionTransactions].sort(
@@ -228,7 +230,7 @@ export default function TransactionsPage() {
                       </td>
                       <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                         <p className="text-xs font-mono text-muted-foreground break-all">
-                          {transaction.stripe_charge_id || transaction.stripe_subscription_id || 'N/A'}
+                          {transaction.reference || 'N/A'}
                         </p>
                       </td>
                       <td className="px-4 sm:px-6 py-4 font-bold">${(transaction.amount / 100).toFixed(2)}</td>

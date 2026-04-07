@@ -40,10 +40,60 @@ export default function AdminAnalyticsPage() {
     checkAuth()
   }, [])
 
-  // Calculate analytics
-  const totalRevenue = events.reduce((sum, e) => sum + (e.ticket_price_cents || 0), 0)
-  const avgEventPrice = events.length > 0 ? totalRevenue / events.length : 0
-  const completedEvents = events.filter((e) => e.status === 'completed').length
+  const [stats, setStats] = useState<any>({
+    totalUsers: 0,
+    totalPurchases: 0,
+    totalSubscriptions: 0,
+    totalRevenue: 0,
+    completedPurchases: 0,
+  })
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error || !user) {
+          router.push('/auth/login')
+          return
+        }
+
+        setUser(user)
+
+        // Load events
+        const eventsData = await getEvents(supabase)
+        setEvents(eventsData)
+
+        // Load real analytics from purchases and subscriptions
+        const [purchasesResult, subscriptionsResult, usersResult] = await Promise.all([
+          supabase.from('purchases').select('*'),
+          supabase.from('subscriptions').select('*'),
+          supabase.from('profiles').select('id'),
+        ])
+
+        const purchases = purchasesResult.data || []
+        const subscriptions = subscriptionsResult.data || []
+        const users = usersResult.data || []
+
+        const completedPurchases = purchases.filter(p => p.status === 'completed')
+        const totalRevenue = completedPurchases.reduce((sum, p) => sum + (p.amount_cents || 0), 0)
+
+        setStats({
+          totalUsers: users.length,
+          totalPurchases: purchases.length,
+          totalSubscriptions: subscriptions.length,
+          totalRevenue,
+          completedPurchases: completedPurchases.length,
+        })
+      } catch (error) {
+        console.error('Failed to load events:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   if (loading) {
     return (
@@ -70,24 +120,24 @@ export default function AdminAnalyticsPage() {
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
-              title="Total Events"
-              value={events.length}
-              subtitle="All time"
+              title="Total Users"
+              value={stats.totalUsers}
+              subtitle="Registered users"
             />
             <MetricCard
-              title="Completed Events"
-              value={completedEvents}
-              subtitle="Successfully hosted"
+              title="Total Purchases"
+              value={stats.totalPurchases}
+              subtitle="PPV transactions"
             />
             <MetricCard
               title="Total Revenue"
-              value={`$${(totalRevenue / 100).toFixed(2)}`}
-              subtitle="From PPV events"
+              value={`$${(stats.totalRevenue / 100).toFixed(2)}`}
+              subtitle="From completed purchases"
             />
             <MetricCard
-              title="Avg Event Price"
-              value={`$${(avgEventPrice / 100).toFixed(2)}`}
-              subtitle="Average PPV price"
+              title="Active Subscriptions"
+              value={stats.totalSubscriptions}
+              subtitle="Current subscribers"
             />
           </div>
 
