@@ -93,11 +93,13 @@ export async function POST(req: Request) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
+        console.log('Subscription updated:', subscription.id, subscription.status)
 
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
             status: subscription.status === 'active' ? 'active' : 'cancelled',
+            current_period_start: new Date(subscription.current_period_start * 1000),
             current_period_end: new Date(subscription.current_period_end * 1000),
           })
           .eq('stripe_subscription_id', subscription.id)
@@ -110,6 +112,7 @@ export async function POST(req: Request) {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
+        console.log('Subscription deleted:', subscription.id)
 
         const { error: deleteError } = await supabase
           .from('subscriptions')
@@ -133,6 +136,16 @@ export async function POST(req: Request) {
         if (refundError) {
           console.error('Error processing refund:', refundError)
         }
+        break
+      }
+
+      case 'invoice.paid': {
+        console.log('Invoice paid - subscription renewing')
+        break
+      }
+
+      case 'payment_intent.succeeded': {
+        console.log('Payment intent succeeded')
         break
       }
 

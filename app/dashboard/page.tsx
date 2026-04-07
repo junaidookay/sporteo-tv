@@ -158,17 +158,15 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Plan</p>
-                    <p className="font-bold capitalize">{subscription.plan_type} Plan</p>
+                    <p className="font-bold capitalize">{subscription.subscription_type} Plan</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Renews On</p>
                     <p className="font-bold">
-                      {new Date(subscription.current_period_end).toLocaleDateString()}
+                      {subscription.current_period_end 
+                        ? new Date(subscription.current_period_end).toLocaleDateString()
+                        : 'N/A'}
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Price</p>
-                    <p className="font-bold">${(subscription.price_cents / 100).toFixed(2)}/month</p>
                   </div>
                   <Button
                     onClick={handleCancelSubscription}
