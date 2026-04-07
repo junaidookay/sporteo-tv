@@ -68,7 +68,6 @@ export async function startCheckoutSession(productId: string) {
         },
         product_data: {
           name: product.name,
-          description: product.description,
         },
       })
       
