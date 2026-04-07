@@ -1,15 +1,71 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { SUBSCRIPTION_PLANS } from '@/lib/products'
+import { createClient } from '@/lib/supabase/client'
 
 export default function SubscriptionsPage() {
   const router = useRouter()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+  const [subscription, setSubscription] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const monthlyPlan = SUBSCRIPTION_PLANS.find((p) => p.id === 'sub_monthly')
-  const annualPlan = SUBSCRIPTION_PLANS.find((p) => p.id === 'sub_annual')
+  useEffect(() => {
+    async function checkUserAndSubscription() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+
+        if (user) {
+          const { data } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle()
+          setSubscription(data)
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkUserAndSubscription()
+  }, [])
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription?')) return
+
+    try {
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'cancelled' })
+        .eq('id', subscription.id)
+      
+      setSubscription({ ...subscription, status: 'cancelled' })
+      alert('Subscription cancelled. You will retain access until the end of your billing period.')
+    } catch (error) {
+      console.error('Error cancelling subscription:', error)
+      alert('Failed to cancel subscription')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <p className="text-center text-muted-foreground">Loading...</p>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -23,102 +79,118 @@ export default function SubscriptionsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Monthly Plan Card */}
-          <Card
-            className="p-8 flex flex-col border-border hover:border-primary transition-all cursor-pointer"
-            onClick={() => router.push('/checkout/sub_monthly')}
-          >
-            <h3 className="text-3xl font-black mb-4">MONTHLY PASS</h3>
-            <div className="mb-8">
-              <div className="text-5xl font-black text-primary">$9.99</div>
-              <div className="text-muted-foreground mt-2">per month, cancel anytime</div>
+        {subscription && subscription.status === 'active' ? (
+          <Card className="p-8 border-primary bg-primary/5 max-w-2xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h2 className="text-3xl font-black mb-2">Current Subscription</h2>
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold capitalize">{subscription.subscription_type} Plan</p>
+                  <p className="text-muted-foreground">
+                    Status: <span className="text-green-500 font-bold">Active</span>
+                  </p>
+                  {subscription.current_period_end && (
+                    <p className="text-muted-foreground">
+                      Renews on: {new Date(subscription.current_period_end).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleCancelSubscription}
+                  variant="outline"
+                  className="border-destructive text-destructive hover:bg-destructive/10"
+                >
+                  Cancel Subscription
+                </Button>
+                <Button
+                  onClick={() => router.push('/dashboard')}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Go to Dashboard
+                </Button>
+              </div>
             </div>
-
-            <ul className="space-y-4 mb-8 flex-1">
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Unlimited access to all events</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>HD video quality (1080p)</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Watch on phone, tablet, or TV</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Ad-free streaming</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Watch offline (coming soon)</span>
-              </li>
-            </ul>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push('/checkout/sub_monthly')
-              }}
-              className="mt-8 w-full py-3 rounded-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Get Started
-            </button>
           </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Monthly Plan Card */}
+            <Card className="p-8 flex flex-col border-border hover:border-primary transition-all">
+              <h3 className="text-3xl font-black mb-4">MONTHLY PASS</h3>
+              <div className="mb-8">
+                <div className="text-5xl font-black text-primary">$9.99</div>
+                <div className="text-muted-foreground mt-2">per month, cancel anytime</div>
+              </div>
 
-          {/* Annual Plan Card */}
-          <Card
-            className="p-8 flex flex-col border-primary bg-primary/5 hover:border-primary transition-all cursor-pointer"
-            onClick={() => router.push('/checkout/sub_annual')}
-          >
-            <div className="mb-4">
-              <span className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-black">
-                SAVE 17%
-              </span>
-            </div>
-            <h3 className="text-3xl font-black mb-4">ANNUAL PASS</h3>
-            <div className="mb-8">
-              <div className="text-5xl font-black text-primary">$99.99</div>
-              <div className="text-muted-foreground mt-2">per year</div>
-            </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Unlimited access to all events</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>HD video quality (1080p)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Watch on phone, tablet, or TV</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Ad-free streaming</span>
+                </li>
+              </ul>
 
-            <ul className="space-y-4 mb-8 flex-1">
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Everything in Monthly</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>4K video quality</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Priority customer support</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Early access to premium events</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary text-xl">✓</span>
-                <span>Exclusive member community</span>
-              </li>
-            </ul>
+              <Button
+                onClick={() => router.push('/checkout/sub_monthly')}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Get Started
+              </Button>
+            </Card>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push('/checkout/sub_annual')
-              }}
-              className="mt-8 w-full py-3 rounded-lg font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Get Started
-            </button>
-          </Card>
-        </div>
+            {/* Annual Plan Card */}
+            <Card className="p-8 flex flex-col border-primary bg-primary/5 hover:border-primary transition-all relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="inline-block bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-black">
+                  BEST VALUE
+                </span>
+              </div>
+              <h3 className="text-3xl font-black mb-4 mt-2">ANNUAL PASS</h3>
+              <div className="mb-8">
+                <div className="text-5xl font-black text-primary">$99.99</div>
+                <div className="text-muted-foreground mt-2">per year (save $19.88)</div>
+              </div>
+
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Everything in Monthly</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>4K video quality</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Priority customer support</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary text-xl">✓</span>
+                  <span>Early access to premium events</span>
+                </li>
+              </ul>
+
+              <Button
+                onClick={() => router.push('/checkout/sub_annual')}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Get Started
+              </Button>
+            </Card>
+          </div>
+        )}
 
         {/* FAQ Section */}
         <div className="mt-20 pt-20 border-t border-border">
@@ -156,7 +228,7 @@ export default function SubscriptionsPage() {
             <div>
               <h3 className="text-xl font-bold mb-2">What devices can I watch on?</h3>
               <p className="text-muted-foreground">
-                You can watch on any device with our apps for iOS, Android, smart TVs, and web browsers. Please note: only one device can stream at a time per account.
+                You can watch on any device with our apps for iOS, Android, smart TVs, and web browsers.
               </p>
             </div>
           </div>

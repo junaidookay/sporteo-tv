@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { getProfile, getUserSubscription, getEvents, getPurchase, getUserPurchases } from '@/lib/db-client'
+import { SUBSCRIPTION_PLANS } from '@/lib/products'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -308,7 +309,7 @@ export default function DashboardPage() {
                         <tr key={purchase.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
                           <td className="px-6 py-4 font-medium">{event?.title || 'Unknown Event'}</td>
                           <td className="px-6 py-4 text-sm text-muted-foreground">
-                            {new Date(purchase.purchase_date).toLocaleDateString()}
+                            {new Date(purchase.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 font-bold">
                             ${(purchase.amount_cents / 100).toFixed(2)}
@@ -350,28 +351,35 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                   <div className="p-4 bg-primary/10 border border-primary rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">Current Plan</p>
-                    <p className="text-2xl font-black capitalize">{subscription.plan_type} Plan</p>
+                    <p className="text-2xl font-black capitalize">{subscription.subscription_type} Plan</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Price</p>
-                      <p className="text-xl font-bold">${(subscription.price_cents / 100).toFixed(2)}</p>
+                      <p className="text-xl font-bold">
+                        ${subscription.subscription_type === 'monthly' ? '9.99' : '99.99'}/
+                        {subscription.subscription_type === 'monthly' ? 'month' : 'year'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Billing Cycle</p>
-                      <p className="text-xl font-bold capitalize">{subscription.plan_type}ly</p>
+                      <p className="text-xl font-bold capitalize">
+                        {subscription.subscription_type === 'monthly' ? 'Monthly' : 'Yearly'}
+                      </p>
                     </div>
                   </div>
 
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Next Renewal Date</p>
                     <p className="font-bold">
-                      {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
+                      {subscription.current_period_end
+                        ? new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
                     </p>
                   </div>
 

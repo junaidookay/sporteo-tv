@@ -78,7 +78,7 @@ export default function TransactionsPage() {
           ...s,
           type: 'subscription',
           date: s.created_at,
-          amount: 0, // Subscriptions don't have a direct amount in this table
+          amount: s.subscription_type === 'annual' ? 9999 : 999, // $99.99 or $9.99
           reference: s.stripe_subscription_id,
         }))
 
