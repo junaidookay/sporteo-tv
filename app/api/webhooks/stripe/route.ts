@@ -87,21 +87,6 @@ export async function POST(req: Request) {
           } else {
             console.log('Purchase recorded successfully')
           }
-
-          const accessToken = crypto.randomUUID()
-          const { error: streamError } = await supabase.from('streams').insert({
-            user_id: userId,
-            event_id: eventId,
-            access_type: 'purchased',
-            access_token: accessToken,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          })
-          
-          if (streamError) {
-            console.error('Error creating stream access:', streamError)
-          } else {
-            console.log('Stream access created successfully')
-          }
         }
         break
       }
