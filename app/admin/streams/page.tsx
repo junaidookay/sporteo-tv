@@ -429,15 +429,23 @@ export default function StreamsPage() {
                     </div>
                   )}
 
-                  {isPolling && selectedStream?.cloudflare_live_input_id && streamStatus?.enabled && (
+                  {isPolling && selectedStream?.cloudflare_live_input_id && (
                     <div className="mt-4">
                       <label className="block text-muted-foreground mb-2">Stream Preview</label>
-                      <iframe
-                        src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
-                        className="w-full aspect-video rounded-lg border border-border"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                      {streamStatus?.enabled ? (
+                        <iframe
+                          src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                          className="w-full aspect-video rounded-lg border border-border"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div className="w-full aspect-video bg-secondary rounded-lg border border-border flex items-center justify-center">
+                          <p className="text-muted-foreground text-sm">
+                            {streamStatus?.status === 'disconnected' ? 'Waiting for OBS stream... Make sure OBS is connected.' : 'Stream not active yet. Start streaming in OBS first.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
