@@ -80,6 +80,9 @@ export default function StreamsPage() {
   }
 
   const handleGenerateStreamKey = async (eventId: string) => {
+    console.log('handleGenerateStreamKey called with eventId:', eventId)
+    console.log('cloudflareConfig:', cloudflareConfig)
+
     if (!cloudflareConfig?.cloudflareAccountId || !cloudflareConfig?.cloudflareApiToken) {
       alert('Cloudflare Stream not configured. Please add your credentials in Settings.')
       return
@@ -87,10 +90,14 @@ export default function StreamsPage() {
 
     try {
       const event = events.find(e => e.id === eventId)
-      if (!event) return
+      if (!event) {
+        console.error('Event not found:', eventId)
+        return
+      }
 
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
+      console.log('Token available:', !!token)
 
       if (!token) {
         throw new Error('Not authenticated')
@@ -105,16 +112,19 @@ export default function StreamsPage() {
         body: JSON.stringify({ eventId }),
       })
 
+      console.log('Response status:', response.status)
+
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to create live stream')
       }
 
       const data = await response.json()
+      console.log('Response data:', data)
 
       await supabase
         .from('events')
-        .update({ 
+        .update({
           cloudflare_live_input_id: data.liveInputId
         })
         .eq('id', eventId)
