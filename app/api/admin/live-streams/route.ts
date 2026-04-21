@@ -134,23 +134,15 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    if (!liveInputResponse.ok) {
-      const error = await liveInputResponse.json()
-      console.error('Cloudflare API error:', error)
-      return NextResponse.json(
-        { error: 'Cloudflare API error: ' + JSON.stringify(error.error || error.message) },
-        { status: liveInputResponse.status }
-      )
-    }
-
     const liveInputData: any = await liveInputResponse.json()
-    console.log('Cloudflare response:', liveInputData)
+    console.log('Cloudflare response status:', liveInputResponse.status)
+    console.log('Cloudflare response:', JSON.stringify(liveInputData))
 
-    if (!liveInputData.success) {
-      console.error('Cloudflare error:', liveInputData.error)
+    if (!liveInputResponse.ok) {
+      console.error('Cloudflare API error:', liveInputData)
       return NextResponse.json(
-        { error: liveInputData.error?.message || 'Failed to create live stream' },
-        { status: 400 }
+        { error: 'Cloudflare API error: ' + JSON.stringify(liveInputData.error || liveInputData.message || 'HTTP ' + liveInputResponse.status) },
+        { status: liveInputResponse.status }
       )
     }
 
@@ -172,12 +164,19 @@ export async function POST(request: NextRequest) {
 
     console.log('Live stream created:', { streamId, streamKey, ingestServer, playbackUrl })
 
+    // Update event with stream ID
     const { error: updateError } = await supabase
       .from('events')
       .update({ cloudflare_live_input_id: streamId })
       .eq('id', eventId)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Failed to update event:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to update event: ' + updateError.message },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       {
@@ -192,7 +191,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating live stream:', error)
     return NextResponse.json(
-      { error: 'Failed to create live stream' },
+      { error: 'Failed to create live stream: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     )
   }
