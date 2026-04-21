@@ -76,7 +76,7 @@ export default function StreamsPage() {
     setStreamKey(key)
   }
 
-  const handleStartStream = async (eventId: string) => {
+  const handleGenerateStreamKey = async (eventId: string) => {
     if (!cloudflareConfig?.cloudflareAccountId || !cloudflareConfig?.cloudflareApiToken) {
       alert('Cloudflare Stream not configured. Please add your credentials in Settings.')
       return
@@ -102,16 +102,38 @@ export default function StreamsPage() {
       await supabase
         .from('events')
         .update({ 
-          status: 'live',
           cloudflare_live_input_id: data.liveInputId
         })
         .eq('id', eventId)
 
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 'live', cloudflare_live_input_id: data.liveInputId } : e)))
-      setSelectedStream({ ...event, status: 'live', cloudflare_live_input_id: data.liveInputId })
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId } : e)))
+      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId })
+      setStreamKey(data.liveInputId)
+    } catch (error) {
+      console.error('Failed to generate stream key:', error)
+      alert('Failed to generate stream key: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  const handleStartStream = async (eventId: string) => {
+    const event = events.find(e => e.id === eventId)
+    if (!event?.cloudflare_live_input_id) {
+      alert('Please generate a stream key first by clicking "Generate Stream Key"')
+      return
+    }
+
+    try {
+      await supabase
+        .from('events')
+        .update({ status: 'live' })
+        .eq('id', eventId)
+
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 'live' } : e)))
+      if (selectedStream?.id === eventId) {
+        setSelectedStream({ ...selectedStream, status: 'live' })
+      }
     } catch (error) {
       console.error('Failed to start stream:', error)
-      alert('Failed to start stream: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
@@ -233,12 +255,21 @@ export default function StreamsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleStartStream(event.id)}
-                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        Start Stream
-                      </Button>
+                      {!event.cloudflare_live_input_id ? (
+                        <Button
+                          onClick={() => handleGenerateStreamKey(event.id)}
+                          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          Generate Stream Key
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleStartStream(event.id)}
+                          className="flex-1 bg-green-600 text-white hover:bg-green-600/90"
+                        >
+                          Go Live
+                        </Button>
+                      )}
                       <Button variant="outline" className="flex-1 border-border hover:bg-secondary">
                         Edit
                       </Button>
@@ -288,7 +319,7 @@ export default function StreamsPage() {
                       <p className="text-muted-foreground">
                         Server: {rtmpUrl}
                         <br />
-                        Stream Key: {selectedStream?.cloudflare_live_input_key || '[Select an event and generate stream key]'}
+                        Stream Key: {selectedStream?.cloudflare_live_input_id || streamKey || '[Generate stream key above]'}
                         <br />
                         <br />
                         Copy the stream key from the selected live event above and use it in OBS. Cloudflare will automatically create a replay after the stream ends.
