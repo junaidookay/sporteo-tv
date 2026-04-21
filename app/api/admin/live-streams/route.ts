@@ -6,6 +6,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 )
 
+async function getCloudflareSettings() {
+  const { data: rows, error } = await supabase
+    .from('platform_settings')
+    .select('key, value')
+
+  if (error || !rows) {
+    throw new Error('Failed to load settings')
+  }
+
+  const settings: Record<string, string> = {}
+  for (const row of rows) {
+    settings[row.key] = row.value
+  }
+
+  return {
+    accountId: settings.cloudflare_account_id || '',
+    apiToken: settings.cloudflare_api_token || '',
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -77,12 +97,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
     }
 
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN
+    const cloudflare = await getCloudflareSettings()
+    const accountId = cloudflare.accountId
+    const apiToken = cloudflare.apiToken
 
     if (!accountId || !apiToken) {
       return NextResponse.json(
-        { error: 'Cloudflare is not configured' },
+        { error: 'Cloudflare is not configured. Please add credentials in Admin Settings.' },
         { status: 503 }
       )
     }

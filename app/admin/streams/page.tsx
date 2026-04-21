@@ -77,15 +77,41 @@ export default function StreamsPage() {
   }
 
   const handleStartStream = async (eventId: string) => {
+    if (!cloudflareConfig?.cloudflareAccountId || !cloudflareConfig?.cloudflareApiToken) {
+      alert('Cloudflare Stream not configured. Please add your credentials in Settings.')
+      return
+    }
+
     try {
+      const event = events.find(e => e.id === eventId)
+      if (!event) return
+
+      const response = await fetch('/api/admin/live-streams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create live stream')
+      }
+
+      const data = await response.json()
+
       await supabase
         .from('events')
-        .update({ status: 'live' })
+        .update({ 
+          status: 'live',
+          cloudflare_live_input_id: data.liveInputId
+        })
         .eq('id', eventId)
 
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 'live' } : e)))
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 'live', cloudflare_live_input_id: data.liveInputId } : e)))
+      setSelectedStream({ ...event, status: 'live', cloudflare_live_input_id: data.liveInputId })
     } catch (error) {
       console.error('Failed to start stream:', error)
+      alert('Failed to start stream: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
