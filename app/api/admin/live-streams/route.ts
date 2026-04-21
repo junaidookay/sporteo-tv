@@ -101,6 +101,8 @@ export async function POST(request: NextRequest) {
     const accountId = cloudflare.accountId
     const apiToken = cloudflare.apiToken
 
+    console.log('Cloudflare settings loaded:', { accountId: !!accountId, apiToken: !!apiToken })
+
     if (!accountId || !apiToken) {
       return NextResponse.json(
         { error: 'Cloudflare is not configured. Please add credentials in Admin Settings.' },
@@ -137,9 +139,9 @@ export async function POST(request: NextRequest) {
 
     if (!liveInputResponse.ok) {
       const error = await liveInputResponse.json()
-      console.error('Cloudflare error:', error)
+      console.error('Cloudflare API error:', error)
       return NextResponse.json(
-        { error: 'Failed to create live input' },
+        { error: 'Cloudflare API error: ' + JSON.stringify(error.errors || error.message) },
         { status: liveInputResponse.status }
       )
     }
