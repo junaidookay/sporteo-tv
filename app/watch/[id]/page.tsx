@@ -39,6 +39,12 @@ export default function WatchPage() {
         if (!eventData) {
           throw new Error('Event not found')
         }
+
+        // Check if stream is publicly visible
+        if (!eventData.is_publicly_live && eventData.status !== 'completed') {
+          throw new Error('This stream is not currently available. Please check back later.')
+        }
+
         setEvent(eventData)
 
         // Generate unique device ID for this browser
