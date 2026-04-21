@@ -30,9 +30,11 @@ export default function SettingsPage() {
     stripeLiveWebhookSecret: '',
     bunnyApiKey: '',
     bunnyCdnHostname: '',
+    cloudflareAccountId: '',
+    cloudflareApiToken: '',
   })
 
-  const [expandedSection, setExpandedSection] = useState<'stripe' | 'bunny' | null>(null)
+  const [expandedSection, setExpandedSection] = useState<'stripe' | 'bunny' | 'cloudflare' | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -533,6 +535,67 @@ export default function SettingsPage() {
                           <li>Add your CDN pull zone in Bunny Dashboard</li>
                           <li>Save credentials here</li>
                         </ol>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cloudflare Stream Settings */}
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSection(expandedSection === 'cloudflare' ? null : 'cloudflare')}
+                    className="w-full p-4 bg-secondary/50 hover:bg-secondary/70 transition-colors flex items-center justify-between"
+                  >
+                    <div className="text-left">
+                      <p className="font-bold">Cloudflare Stream</p>
+                      <p className="text-sm text-muted-foreground">Live streaming and video hosting</p>
+                    </div>
+                    <span className="text-2xl font-bold text-muted-foreground">{expandedSection === 'cloudflare' ? '−' : '+'}</span>
+                  </button>
+
+                  {expandedSection === 'cloudflare' && (
+                    <div className="p-6 space-y-4 bg-background border-t border-border">
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Cloudflare Account ID</label>
+                        <input
+                          type="text"
+                          name="cloudflareAccountId"
+                          value={apiSettings.cloudflareAccountId}
+                          onChange={handleApiSettingsChange}
+                          placeholder="Your Cloudflare Account ID"
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Found in Cloudflare Dashboard → Stream → Overview</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold mb-2">Cloudflare API Token</label>
+                        <input
+                          type="password"
+                          name="cloudflareApiToken"
+                          value={apiSettings.cloudflareApiToken}
+                          onChange={handleApiSettingsChange}
+                          placeholder="Your Cloudflare API Token"
+                          className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Create a token with Stream edit permissions in Cloudflare Dashboard → API Tokens</p>
+                      </div>
+
+                      <div className="p-3 bg-blue-600/10 border border-blue-600/30 rounded-lg">
+                        <p className="text-xs text-blue-600 font-bold">Setup Guide:</p>
+                        <ol className="text-xs text-blue-600/80 list-decimal list-inside mt-2 space-y-1">
+                          <li>Create a Cloudflare account and enable Cloudflare Stream</li>
+                          <li>Go to Cloudflare Dashboard → Stream → Overview</li>
+                          <li>Copy your Account ID</li>
+                          <li>Create an API Token with Stream edit permissions</li>
+                          <li>Save both credentials here and they'll be used for OBS streaming</li>
+                        </ol>
+                      </div>
+
+                      <div className="p-3 bg-green-600/10 border border-green-600/30 rounded-lg">
+                        <p className="text-xs text-green-600 font-bold">OBS Streaming Configuration:</p>
+                        <p className="text-xs text-green-600/80 mt-2">After saving, live stream RTMP URLs will be automatically generated when you create events. Simply copy the RTMP URL and stream key into OBS.</p>
                       </div>
                     </div>
                   )}
