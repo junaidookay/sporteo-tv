@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { getEvents } from '@/lib/db-client'
+import { loadSettings } from '@/app/actions/settings'
 
 export default function StreamsPage() {
   const router = useRouter()
@@ -46,14 +47,18 @@ export default function StreamsPage() {
         const eventsData = await getEvents(supabase)
         setEvents(eventsData)
 
-        // Load Cloudflare configuration from localStorage
-        const apiSettings = localStorage.getItem('apiSettings')
-        if (apiSettings) {
-          const config = JSON.parse(apiSettings)
-          setCloudflareConfig(config)
-          if (config.cloudflareAccountId) {
+        // Load Cloudflare configuration from database
+        try {
+          const settings = await loadSettings()
+          if (settings.cloudflareAccountId) {
+            setCloudflareConfig({
+              cloudflareAccountId: settings.cloudflareAccountId,
+              cloudflareApiToken: settings.cloudflareApiToken,
+            })
             setRtmpUrl(`rtmp://live.cloudflare.com:1935/rtmp/`)
           }
+        } catch (e) {
+          console.error('Failed to load cloudflare settings:', e)
         }
       } catch (error) {
         console.error('Auth check failed:', error)
