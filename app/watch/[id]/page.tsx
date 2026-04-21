@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { VideoPlayer } from '@/components/video-player'
+import CloudflareVideoPlayer from '@/components/cloudflare-video-player'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { getEventById, getStreamAccess } from '@/lib/db-client'
 import { getHLSPlaybackUrl, getStreamStats } from '@/lib/bunny'
+import cloudflareStream from '@/lib/cloudflare-stream'
 
 export default function WatchPage() {
   const params = useParams()
@@ -64,14 +66,21 @@ export default function WatchPage() {
         setHasAccess(true)
 
         // Generate stream URL with session token
-        if (eventData.bunny_stream_id) {
-          const url = getHLSPlaybackUrl(eventData.bunny_stream_id)
-          setStreamUrl(url)
-
-          // Get stream stats
+        let streamUrl = ''
+        if (eventData.cloudflare_stream_id) {
+          // Use Cloudflare Stream
+          const signedUrl = await cloudflareStream.generateSignedURL({
+            videoId: eventData.cloudflare_stream_id,
+            expiresIn: 3600,
+          })
+          streamUrl = signedUrl
+        } else if (eventData.bunny_stream_id) {
+          // Fallback to Bunny.net
+          streamUrl = getHLSPlaybackUrl(eventData.bunny_stream_id)
           const streamStats = await getStreamStats(eventData.bunny_stream_id)
           setStats(streamStats)
         }
+        setStreamUrl(streamUrl)
       } catch (err) {
         console.error('Failed to load stream:', err)
         setError(err instanceof Error ? err.message : 'Failed to load stream')
@@ -135,14 +144,24 @@ export default function WatchPage() {
           {/* Main Video Player */}
           <div className="lg:col-span-2">
             {streamUrl ? (
-              <VideoPlayer
-                src={streamUrl}
-                poster={event.featured_image}
-                title={event.title}
-                autoplay={true}
-                controls={true}
-                className="w-full aspect-video"
-              />
+              event.cloudflare_stream_id ? (
+                <CloudflareVideoPlayer
+                  videoId={event.cloudflare_stream_id}
+                  signedUrl={streamUrl}
+                  title={event.title}
+                  isLive={event.is_live}
+                  poster={event.featured_image}
+                />
+              ) : (
+                <VideoPlayer
+                  src={streamUrl}
+                  poster={event.featured_image}
+                  title={event.title}
+                  autoplay={true}
+                  controls={true}
+                  className="w-full aspect-video"
+                />
+              )
             ) : (
               <div className="w-full aspect-video bg-secondary rounded-lg flex items-center justify-center">
                 <p className="text-muted-foreground">Stream not available</p>
