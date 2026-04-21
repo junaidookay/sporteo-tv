@@ -9,7 +9,6 @@ import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { getEventById, getStreamAccess } from '@/lib/db-client'
 import { getHLSPlaybackUrl, getStreamStats } from '@/lib/bunny'
-import cloudflareStream from '@/lib/cloudflare-stream'
 
 export default function WatchPage() {
   const params = useParams()
@@ -68,13 +67,28 @@ export default function WatchPage() {
         // Generate stream URL with session token
         let streamUrl = ''
         if (eventData.cloudflare_stream_id) {
-          // Use Cloudflare Stream
-          const signedUrl = await cloudflareStream.generateSignedURL({
-            videoId: eventData.cloudflare_stream_id,
-            expiresIn: 3600,
-          })
-          streamUrl = signedUrl
-        } else if (eventData.bunny_stream_id) {
+          // Use Cloudflare Stream via API
+          try {
+            const response = await fetch('/api/cloudflare/signed-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                videoId: eventData.cloudflare_stream_id,
+                sessionToken: session.session_token,
+                expiresIn: 3600,
+              }),
+            })
+            if (response.ok) {
+              const data = await response.json()
+              streamUrl = data.signedUrl
+            } else {
+              console.error('Failed to get Cloudflare signed URL')
+            }
+          } catch (err) {
+            console.error('Error getting Cloudflare signed URL:', err)
+          }
+        }
+        if (!streamUrl && eventData.bunny_stream_id) {
           // Fallback to Bunny.net
           streamUrl = getHLSPlaybackUrl(eventData.bunny_stream_id)
           const streamStats = await getStreamStats(eventData.bunny_stream_id)
