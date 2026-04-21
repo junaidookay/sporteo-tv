@@ -35,6 +35,8 @@ export default function SettingsPage() {
   })
 
   const [expandedSection, setExpandedSection] = useState<'stripe' | 'bunny' | 'cloudflare' | null>(null)
+  const [testingCloudflare, setTestingCloudflare] = useState(false)
+  const [cloudflareTestResult, setCloudflareTestResult] = useState<{success: boolean; message: string} | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -90,6 +92,44 @@ export default function SettingsPage() {
 
     checkAuth()
   }, [])
+
+  const testCloudflareConnection = async () => {
+    if (!apiSettings.cloudflareAccountId || !apiSettings.cloudflareApiToken) {
+      setCloudflareTestResult({ success: false, message: 'Please enter both Account ID and API Token' })
+      return
+    }
+
+    setTestingCloudflare(true)
+    setCloudflareTestResult(null)
+
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${apiSettings.cloudflareAccountId}/stream`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiSettings.cloudflareApiToken}`,
+          },
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setCloudflareTestResult({ success: true, message: 'Connection successful! Cloudflare Stream is configured correctly.' })
+        } else {
+          setCloudflareTestResult({ success: false, message: 'Cloudflare API error: ' + (data.errors?.[0]?.message || 'Unknown error') })
+        }
+      } else {
+        const data = await response.json()
+        setCloudflareTestResult({ success: false, message: 'Authentication failed. Check your Account ID and API Token.' })
+      }
+    } catch (error) {
+      setCloudflareTestResult({ success: false, message: 'Connection failed. Please check your credentials.' })
+    } finally {
+      setTestingCloudflare(false)
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!settings) return
@@ -594,6 +634,26 @@ export default function SettingsPage() {
                           <li>Save both credentials here and they'll be used for OBS streaming</li>
                         </ol>
                       </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={testCloudflareConnection}
+                          disabled={testingCloudflare || !apiSettings.cloudflareAccountId || !apiSettings.cloudflareApiToken}
+                          className="flex-1 border-border hover:bg-secondary"
+                        >
+                          {testingCloudflare ? 'Testing...' : 'Test Connection'}
+                        </Button>
+                      </div>
+
+                      {cloudflareTestResult && (
+                        <div className={`p-3 rounded-lg ${cloudflareTestResult.success ? 'bg-green-600/10 border border-green-600/30' : 'bg-red-600/10 border border-red-600/30'}`}>
+                          <p className={`text-xs font-bold ${cloudflareTestResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                            {cloudflareTestResult.message}
+                          </p>
+                        </div>
+                      )}
 
                       <div className="p-3 bg-green-600/10 border border-green-600/30 rounded-lg">
                         <p className="text-xs text-green-600 font-bold">OBS Streaming Configuration:</p>
