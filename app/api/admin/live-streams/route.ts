@@ -158,9 +158,11 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInput = liveInputData.result
+    console.log('Full Cloudflare live input response:', JSON.stringify(liveInput, null, 2))
+
     const liveInputId = liveInput?.uid || liveInput?.id
     const rtmpKey = liveInput?.rtmpKey || liveInput?.streamKey || liveInputId
-    const rtmpsKey = liveInput?.rtmpsKey || liveInputId
+    const rtmpsKey = liveInput?.rtmpsKey || liveInput?.rtmps?.key || liveInputId
 
     if (!liveInputId) {
       console.error('No live input ID in response:', liveInput)
