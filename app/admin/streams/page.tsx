@@ -20,6 +20,8 @@ export default function StreamsPage() {
   const [streamKey, setStreamKey] = useState('')
   const [cloudflareConfig, setCloudflareConfig] = useState<any>(null)
   const [rtmpUrl, setRtmpUrl] = useState('')
+  const [streamStatus, setStreamStatus] = useState<any>(null)
+  const [isPolling, setIsPolling] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -168,10 +170,47 @@ export default function StreamsPage() {
         .eq('id', eventId)
 
       setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: 'completed' } : e)))
+      if (selectedStream?.id === eventId) {
+        setSelectedStream({ ...selectedStream, status: 'completed' })
+      }
     } catch (error) {
       console.error('Failed to stop stream:', error)
     }
   }
+
+  const checkStreamStatus = async (liveInputId: string) => {
+    if (!liveInputId) return
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) return
+
+      const response = await fetch(`/api/cloudflare/live-input-status?liveInputId=${liveInputId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStreamStatus(data)
+      }
+    } catch (error) {
+      console.error('Failed to check stream status:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedStream?.cloudflare_live_input_id && isPolling) {
+      checkStreamStatus(selectedStream.cloudflare_live_input_id)
+      const interval = setInterval(() => {
+        checkStreamStatus(selectedStream.cloudflare_live_input_id)
+      }, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [selectedStream, isPolling])
 
   if (loading) {
     return (
@@ -372,6 +411,35 @@ export default function StreamsPage() {
                       className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
                     />
                   </div>
+
+                  {selectedStream?.cloudflare_live_input_id && (
+                    <div>
+                      <Button
+                        onClick={() => setIsPolling(!isPolling)}
+                        variant={isPolling ? "destructive" : "default"}
+                        className="w-full"
+                      >
+                        {isPolling ? 'Stop Preview' : 'Start Preview'}
+                      </Button>
+                      {streamStatus && (
+                        <p className="text-xs mt-2 text-muted-foreground">
+                          Status: <span className={streamStatus.enabled ? 'text-green-600' : 'text-yellow-600'}>{streamStatus.status}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isPolling && selectedStream?.cloudflare_live_input_id && streamStatus?.enabled && (
+                    <div className="mt-4">
+                      <label className="block text-muted-foreground mb-2">Stream Preview</label>
+                      <iframe
+                        src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                        className="w-full aspect-video rounded-lg border border-border"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-muted-foreground mb-2">Replay Video</label>
