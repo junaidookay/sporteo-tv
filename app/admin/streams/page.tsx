@@ -243,7 +243,11 @@ export default function StreamsPage() {
             {liveEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {liveEvents.map((event) => (
-                  <Card key={event.id} className="p-6 border-border border-red-600/50 bg-red-600/5">
+                  <Card
+                    key={event.id}
+                    className={`p-6 border-border border-red-600/50 bg-red-600/5 cursor-pointer hover:border-red-600 transition-colors ${selectedStream?.id === event.id ? 'border-red-600 bg-red-600/10' : ''}`}
+                    onClick={() => setSelectedStream(event)}
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -292,7 +296,11 @@ export default function StreamsPage() {
             {scheduledEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {scheduledEvents.map((event) => (
-                  <Card key={event.id} className="p-6 border-border">
+                  <Card
+                    key={event.id}
+                    className={`p-6 border-border cursor-pointer hover:border-primary transition-colors ${selectedStream?.id === event.id ? 'border-primary bg-primary/5' : ''}`}
+                    onClick={() => setSelectedStream(event)}
+                  >
                     <h3 className="font-black text-lg mb-4">{event.title}</h3>
 
                     <div className="space-y-3 mb-6 text-sm">
