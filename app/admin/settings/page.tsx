@@ -73,6 +73,8 @@ export default function SettingsPage() {
             stripeLiveWebhookSecret: loaded.stripeLiveWebhookSecret,
             bunnyApiKey: loaded.bunnyApiKey,
             bunnyCdnHostname: loaded.bunnyCdnHostname,
+            cloudflareAccountId: loaded.cloudflareAccountId,
+            cloudflareApiToken: loaded.cloudflareApiToken,
           })
           setStripeMode(loaded.stripeMode)
         } catch (e) {

@@ -21,6 +21,8 @@ export interface LoadedSettings {
   stripeLiveWebhookSecret: string
   bunnyApiKey: string
   bunnyCdnHostname: string
+  cloudflareAccountId: string
+  cloudflareApiToken: string
 }
 
 export async function loadSettings(): Promise<LoadedSettings> {
@@ -73,6 +75,8 @@ export async function loadSettings(): Promise<LoadedSettings> {
     stripeLiveWebhookSecret: settings.stripe_live_webhook_secret || '',
     bunnyApiKey: settings.bunny_api_key || '',
     bunnyCdnHostname: settings.bunny_cdn_hostname || '',
+    cloudflareAccountId: settings.cloudflare_account_id || '',
+    cloudflareApiToken: settings.cloudflare_api_token || '',
   }
 }
 
@@ -113,6 +117,8 @@ export async function saveSettings(settings: PlatformSettings, apiSettings: ApiS
     { key: 'stripe_live_webhook_secret', value: apiSettings.stripeLiveWebhookSecret },
     { key: 'bunny_api_key', value: apiSettings.bunnyApiKey },
     { key: 'bunny_cdn_hostname', value: apiSettings.bunnyCdnHostname },
+    { key: 'cloudflare_account_id', value: apiSettings.cloudflareAccountId },
+    { key: 'cloudflare_api_token', value: apiSettings.cloudflareApiToken },
   ]
 
   for (const row of rows) {
@@ -150,4 +156,6 @@ export interface ApiSettings {
   stripeLiveWebhookSecret: string
   bunnyApiKey: string
   bunnyCdnHostname: string
+  cloudflareAccountId: string
+  cloudflareApiToken: string
 }
