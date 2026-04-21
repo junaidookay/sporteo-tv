@@ -17,6 +17,8 @@ export default function StreamsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedStream, setSelectedStream] = useState<any>(null)
   const [streamKey, setStreamKey] = useState('')
+  const [cloudflareConfig, setCloudflareConfig] = useState<any>(null)
+  const [rtmpUrl, setRtmpUrl] = useState('')
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -43,6 +45,16 @@ export default function StreamsPage() {
 
         const eventsData = await getEvents(supabase)
         setEvents(eventsData)
+
+        // Load Cloudflare configuration from localStorage
+        const apiSettings = localStorage.getItem('apiSettings')
+        if (apiSettings) {
+          const config = JSON.parse(apiSettings)
+          setCloudflareConfig(config)
+          if (config.cloudflareAccountId) {
+            setRtmpUrl(`rtmp://live.cloudflare.com:1935/rtmp/`)
+          }
+        }
       } catch (error) {
         console.error('Auth check failed:', error)
         router.push('/auth/login')
@@ -129,8 +141,8 @@ export default function StreamsPage() {
 
                     <div className="space-y-3 mb-6 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Stream ID</p>
-                        <p className="font-mono text-xs break-all">{event.bunny_stream_id || 'No ID assigned'}</p>
+                        <p className="text-muted-foreground">Cloudflare Live Input ID</p>
+                        <p className="font-mono text-xs break-all">{event.cloudflare_live_input_id || 'Not generated yet'}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Type</p>
@@ -217,72 +229,87 @@ export default function StreamsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* RTMP Settings */}
               <div>
-                <h3 className="font-bold text-lg mb-4">RTMP Settings</h3>
-                <div className="space-y-4 text-sm">
-                  <div>
-                    <label className="block text-muted-foreground mb-2">RTMP Server URL</label>
-                    <input
-                      type="text"
-                      value="rtmp://your-bunny-ingest.bunnycdn.com:1935/live"
-                      readOnly
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-muted-foreground mb-2">Stream Key</label>
-                    <div className="flex gap-2">
+                <h3 className="font-bold text-lg mb-4">Cloudflare Stream - RTMP Settings</h3>
+                {cloudflareConfig?.cloudflareAccountId ? (
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <label className="block text-muted-foreground mb-2">RTMP Server URL</label>
                       <input
                         type="text"
-                        value={streamKey || 'Click generate to create a key'}
+                        value={rtmpUrl || 'Loading...'}
                         readOnly
-                        className="flex-1 px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
+                        className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
                       />
-                      <Button onClick={generateStreamKey} variant="outline" className="border-border">
-                        Generate
-                      </Button>
+                    </div>
+
+                    <div>
+                      <label className="block text-muted-foreground mb-2">Account ID</label>
+                      <input
+                        type="text"
+                        value={cloudflareConfig.cloudflareAccountId}
+                        readOnly
+                        className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-green-600/10 border border-green-600/30 rounded text-xs">
+                      <p className="font-bold text-green-600 mb-2">OBS Configuration</p>
+                      <p className="text-muted-foreground">
+                        Server: {rtmpUrl}
+                        <br />
+                        Stream Key: {selectedStream?.cloudflare_live_input_key || '[Select an event and generate stream key]'}
+                        <br />
+                        <br />
+                        Copy the stream key from the selected live event above and use it in OBS. Cloudflare will automatically create a replay after the stream ends.
+                      </p>
                     </div>
                   </div>
-
-                  <div className="p-3 bg-primary/10 border border-primary rounded text-xs">
-                    <p className="font-bold mb-2">OBS Configuration</p>
-                    <p className="text-muted-foreground">
-                      Server: rtmp://your-bunny-ingest.bunnycdn.com:1935/live
-                      <br />
-                      Stream Key: {streamKey || '[Click Generate]'}
+                ) : (
+                  <div className="p-4 bg-yellow-600/10 border border-yellow-600/30 rounded text-sm">
+                    <p className="text-yellow-600 font-bold">Cloudflare Stream not configured</p>
+                    <p className="text-muted-foreground mt-2">
+                      Add your Cloudflare Account ID and API Token in Admin Settings → Cloudflare Stream to enable live streaming.
                     </p>
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* HLS/DASH Info */}
+              {/* Cloudflare Stream Info */}
               <div>
-                <h3 className="font-bold text-lg mb-4">Playback URLs</h3>
+                <h3 className="font-bold text-lg mb-4">Cloudflare Stream Playback</h3>
                 <div className="space-y-4 text-sm">
                   <div>
-                    <label className="block text-muted-foreground mb-2">HLS Playback URL</label>
+                    <label className="block text-muted-foreground mb-2">Live Stream</label>
                     <input
                       type="text"
-                      value="https://your-bunny.bunnycdnh.com/your-library/your-video/playlist.m3u8"
+                      value={selectedStream?.cloudflare_live_input_id ? `Live playback enabled for: ${selectedStream.title}` : 'Select a live event above'}
                       readOnly
                       className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-muted-foreground mb-2">DASH Playback URL</label>
+                    <label className="block text-muted-foreground mb-2">Replay Video</label>
                     <input
                       type="text"
-                      value="https://your-bunny.bunnycdnh.com/your-library/your-video/manifest.mpd"
+                      value={selectedStream?.replay_video_id ? `Replay ID: ${selectedStream.replay_video_id}` : 'Automatically created after live stream ends'}
                       readOnly
                       className="w-full px-3 py-2 bg-secondary border border-border rounded text-xs font-mono"
                     />
                   </div>
 
                   <div className="p-3 bg-blue-600/10 border border-blue-600/50 rounded text-xs">
-                    <p className="font-bold text-blue-600 mb-2">Integration Note</p>
+                    <p className="font-bold text-blue-600 mb-2">Automatic Features</p>
                     <p className="text-muted-foreground">
-                      These URLs are used for playback on the video player component. Update stream URLs as needed.
+                      Cloudflare Stream automatically:
+                      <br />
+                      • Records your live stream
+                      <br />
+                      • Creates a replay video when the live broadcast ends
+                      <br />
+                      • Generates signed URLs for secure playback
+                      <br />
+                      • Manages adaptive bitrate streaming
                     </p>
                   </div>
                 </div>
