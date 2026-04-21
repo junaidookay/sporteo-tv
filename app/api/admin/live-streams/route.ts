@@ -147,6 +147,8 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInputData: any = await liveInputResponse.json()
+    console.log('Cloudflare response:', liveInputData)
+
     if (!liveInputData.success) {
       console.error('Cloudflare error:', liveInputData.errors)
       return NextResponse.json(
@@ -156,7 +158,15 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInput = liveInputData.result
-    const liveInputId = liveInput.id
+    const liveInputId = liveInput?.uid || liveInput?.id
+
+    if (!liveInputId) {
+      console.error('No live input ID in response:', liveInput)
+      return NextResponse.json(
+        { error: 'Failed to get live input ID from Cloudflare response' },
+        { status: 400 }
+      )
+    }
 
     const { error: updateError } = await supabase
       .from('events')
