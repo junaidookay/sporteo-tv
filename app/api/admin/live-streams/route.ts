@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInputResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs`,
+      `https://api.realtime.cloudflare.com/v2/livestreams`,
       {
         method: 'POST',
         headers: {
@@ -129,15 +129,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          meta: {
-            name: `Live: ${event.title}`,
-            description: `Live stream for ${event.title}`,
-          },
-          recording: {
-            enabled: true,
-            mode: 'always',
-          },
-          requireSignedURLs: false,
+          name: event.title,
         }),
       }
     )
@@ -146,7 +138,7 @@ export async function POST(request: NextRequest) {
       const error = await liveInputResponse.json()
       console.error('Cloudflare API error:', error)
       return NextResponse.json(
-        { error: 'Cloudflare API error: ' + JSON.stringify(error.errors || error.message) },
+        { error: 'Cloudflare API error: ' + JSON.stringify(error.error || error.message) },
         { status: liveInputResponse.status }
       )
     }
@@ -155,44 +147,45 @@ export async function POST(request: NextRequest) {
     console.log('Cloudflare response:', liveInputData)
 
     if (!liveInputData.success) {
-      console.error('Cloudflare error:', liveInputData.errors)
+      console.error('Cloudflare error:', liveInputData.error)
       return NextResponse.json(
-        { error: liveInputData.errors?.[0]?.message || 'Failed to create live input' },
+        { error: liveInputData.error?.message || 'Failed to create live stream' },
         { status: 400 }
       )
     }
 
-    const liveInput = liveInputData.result
-    console.log('Full Cloudflare live input response:', JSON.stringify(liveInput, null, 2))
+    const liveInput = liveInputData.data
+    console.log('Full Cloudflare live stream response:', JSON.stringify(liveInput, null, 2))
 
-    const liveInputId = liveInput?.uid || liveInput?.id
-    const rtmpKey = liveInput?.rtmpKey || liveInput?.streamKey || liveInputId
-    const rtmpsKey = liveInput?.rtmpsKey || liveInput?.rtmps?.key || liveInputId
+    const streamId = liveInput?.id
+    const streamKey = liveInput?.stream_key
+    const ingestServer = liveInput?.ingest_server
+    const playbackUrl = liveInput?.playback_url
 
-    if (!liveInputId) {
-      console.error('No live input ID in response:', liveInput)
+    if (!streamId) {
+      console.error('No stream ID in response:', liveInput)
       return NextResponse.json(
-        { error: 'Failed to get live input ID from Cloudflare response' },
+        { error: 'Failed to get stream ID from Cloudflare response' },
         { status: 400 }
       )
     }
 
-    console.log('Live input created:', { liveInputId, rtmpKey, rtmpsKey })
+    console.log('Live stream created:', { streamId, streamKey, ingestServer, playbackUrl })
 
     const { error: updateError } = await supabase
       .from('events')
-      .update({ cloudflare_live_input_id: liveInputId })
+      .update({ cloudflare_live_input_id: streamId })
       .eq('id', eventId)
 
     if (updateError) throw updateError
 
     return NextResponse.json(
       {
-        liveInputId,
-        rtmpUrl: `rtmp://live.cloudflare.com:1935/live/${rtmpKey}`,
-        rtmpsUrl: `rtmps://live.cloudflare.com:443/live/${rtmpsKey}`,
-        streamKey: rtmpsKey,
-        playbackUrl: `https://customer-${accountId}.cloudflarestream.com/live/${liveInputId}/manifest/video.m3u8`,
+        liveInputId: streamId,
+        rtmpUrl: ingestServer || `rtmps://live.cloudflare.com:443/live/`,
+        rtmpsUrl: ingestServer || `rtmps://live.cloudflare.com:443/live/`,
+        streamKey: streamKey,
+        playbackUrl: playbackUrl,
       },
       { status: 201 }
     )
