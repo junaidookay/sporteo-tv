@@ -159,6 +159,8 @@ export async function POST(request: NextRequest) {
 
     const liveInput = liveInputData.result
     const liveInputId = liveInput?.uid || liveInput?.id
+    const rtmpKey = liveInput?.rtmpKey || liveInput?.streamKey || liveInputId
+    const rtmpsKey = liveInput?.rtmpsKey || liveInputId
 
     if (!liveInputId) {
       console.error('No live input ID in response:', liveInput)
@@ -167,6 +169,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log('Live input created:', { liveInputId, rtmpKey, rtmpsKey })
 
     const { error: updateError } = await supabase
       .from('events')
@@ -178,8 +182,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         liveInputId,
-        rtmpUrl: `rtmp://live.cloudflare.com:1935/live/${liveInputId}`,
-        streamKey: liveInputId,
+        rtmpUrl: `rtmp://live.cloudflare.com:1935/live/${rtmpKey}`,
+        rtmpsUrl: `rtmps://live.cloudflare.com:443/live/${rtmpsKey}`,
+        streamKey: rtmpsKey,
         playbackUrl: `https://customer-${accountId}.cloudflarestream.com/live/${liveInputId}/manifest/video.m3u8`,
       },
       { status: 201 }

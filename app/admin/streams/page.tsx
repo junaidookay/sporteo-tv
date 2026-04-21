@@ -377,14 +377,14 @@ export default function StreamsPage() {
                     </div>
 
                     <div className="p-3 bg-green-600/10 border border-green-600/30 rounded text-xs">
-                      <p className="font-bold text-green-600 mb-2">OBS Configuration</p>
+                      <p className="font-bold text-green-600 mb-2">OBS Configuration (Recommended: RTMPS)</p>
                       <p className="text-muted-foreground">
-                        Server: {rtmpUrl}
+                        <strong>RTMPS Server:</strong> rtmps://live.cloudflare.com:443/live/
                         <br />
-                        Stream Key: {selectedStream?.cloudflare_live_input_id || streamKey || '[Generate stream key above]'}
+                        <strong>Stream Key:</strong> {streamKey || selectedStream?.cloudflare_live_input_id || '[Generate stream key above]'}
                         <br />
                         <br />
-                        Copy the stream key from the selected live event above and use it in OBS. Cloudflare will automatically create a replay after the stream ends.
+                        <span className="text-yellow-600">Make sure to use the exact stream key shown above (it may differ from the live input ID).</span>
                       </p>
                     </div>
                   </div>
