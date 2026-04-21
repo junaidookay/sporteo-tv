@@ -133,6 +133,11 @@ export async function POST(request: NextRequest) {
             name: `Live: ${event.title}`,
             description: `Live stream for ${event.title}`,
           },
+          recording: {
+            enabled: true,
+            mode: 'auto', // 'auto' records when no one is watching, 'always' always records
+          },
+          requireSignedURLs: false,
         }),
       }
     )
