@@ -50,12 +50,15 @@ export default function StreamsPage() {
         // Load Cloudflare configuration from database
         try {
           const settings = await loadSettings()
+          console.log('Loaded settings:', settings)
           if (settings.cloudflareAccountId) {
             setCloudflareConfig({
               cloudflareAccountId: settings.cloudflareAccountId,
               cloudflareApiToken: settings.cloudflareApiToken,
             })
             setRtmpUrl(`rtmp://live.cloudflare.com:1935/rtmp/`)
+          } else {
+            console.log('No Cloudflare Account ID found in settings')
           }
         } catch (e) {
           console.error('Failed to load cloudflare settings:', e)
