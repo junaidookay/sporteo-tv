@@ -103,27 +103,25 @@ export default function SettingsPage() {
     setCloudflareTestResult(null)
 
     try {
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${apiSettings.cloudflareAccountId}/stream`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${apiSettings.cloudflareApiToken}`,
-          },
-        }
-      )
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setCloudflareTestResult({ success: true, message: 'Connection successful! Cloudflare Stream is configured correctly.' })
-        } else {
-          setCloudflareTestResult({ success: false, message: 'Cloudflare API error: ' + (data.errors?.[0]?.message || 'Unknown error') })
-        }
-      } else {
-        const data = await response.json()
-        setCloudflareTestResult({ success: false, message: 'Authentication failed. Check your Account ID and API Token.' })
+      if (!token) {
+        setCloudflareTestResult({ success: false, message: 'Not authenticated' })
+        setTestingCloudflare(false)
+        return
       }
+
+      const response = await fetch('/api/cloudflare/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+      setCloudflareTestResult({ success: data.success, message: data.message })
     } catch (error) {
       setCloudflareTestResult({ success: false, message: 'Connection failed. Please check your credentials.' })
     } finally {
