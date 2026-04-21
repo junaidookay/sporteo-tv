@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
           },
           recording: {
             enabled: true,
-            mode: 'auto', // 'auto' records when no one is watching, 'always' always records
+            mode: 'always',
           },
           requireSignedURLs: false,
         }),
