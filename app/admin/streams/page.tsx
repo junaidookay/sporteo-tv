@@ -442,10 +442,11 @@ export default function StreamsPage() {
                       <label className="block text-muted-foreground mb-2">Stream Preview</label>
                       {streamStatus?.enabled ? (
                         <iframe
-                          src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                          src={`https://customer-${String(cloudflareConfig?.cloudflareAccountId)}.cloudflarestream.com/${String(selectedStream.cloudflare_live_input_id)}/iframe`}
                           className="w-full aspect-video rounded-lg border border-border"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
+                          title="Stream Preview"
                         />
                       ) : (
                         <div className="w-full aspect-video bg-secondary rounded-lg border border-border flex items-center justify-center">
