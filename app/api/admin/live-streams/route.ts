@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
+      console.error('Auth error:', authError)
+      if (authError?.message?.includes('Invalid JWT') || authError?.message?.includes('expired')) {
+        return NextResponse.json({ error: 'Session expired. Please log out and log back in.' }, { status: 401 })
+      }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
