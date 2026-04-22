@@ -450,9 +450,9 @@ export default function StreamsPage() {
                     <div className="mt-4">
                       <label className="block text-muted-foreground mb-2">Stream Preview</label>
                       {streamStatus?.enabled ? (
-                        <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+                        <div style={{ position: 'relative', paddingTop: '56.25%', width: '100%' }}>
                           <iframe
-                            src={`https://customer-${String(cloudflareConfig?.cloudflareAccountId)}.cloudflarestream.com/${String(selectedStream.cloudflare_live_input_id)}/iframe`}
+                            src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
                             style={{ border: 'none', position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}
                             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                             allowFullScreen
