@@ -82,6 +82,51 @@ export default function AdminEventsPage() {
     }))
   }
 
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('File must be an image')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const fileName = `thumbnails/${Date.now()}-${file.name}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          upsert: true,
+          contentType: file.type,
+        })
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        alert('Failed to upload image')
+        return
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      
+      setFormData((prev) => ({
+        ...prev,
+        featured_image: data.publicUrl,
+      }))
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Failed to upload image')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -272,15 +317,41 @@ export default function AdminEventsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold mb-2">Featured Image URL</label>
-                    <input
-                      type="url"
-                      name="featured_image"
-                      value={formData.featured_image}
-                      onChange={handleInputChange}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <label className="block text-sm font-bold mb-2">Featured Image</label>
+                    <div className="space-y-3">
+                      {formData.featured_image && (
+                        <div className="w-full aspect-video rounded-lg overflow-hidden border border-border bg-secondary flex items-center justify-center">
+                          <img
+                            src={formData.featured_image}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <label className="flex-1 flex items-center justify-center px-4 py-2 bg-secondary border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors text-center">
+                          <span className="font-bold text-sm">{saving ? 'Uploading...' : 'Upload Image'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleThumbnailUpload}
+                            disabled={saving}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        JPG, PNG, WebP up to 5MB. Or paste URL below.
+                      </div>
+                      <input
+                        type="url"
+                        name="featured_image"
+                        value={formData.featured_image}
+                        onChange={handleInputChange}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full px-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      />
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
