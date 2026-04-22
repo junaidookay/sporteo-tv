@@ -278,6 +278,45 @@ export async function getUserActiveSessions(
   return data as any[]
 }
 
+// Viewing History functions
+export async function addToViewingHistory(
+  supabase: SupabaseClient,
+  userId: string,
+  eventId: string
+) {
+  const { data, error } = await supabase
+    .from('viewing_history')
+    .upsert({
+      user_id: userId,
+      event_id: eventId,
+      last_watched: new Date().toISOString(),
+    }, { onConflict: 'user_id,event_id' })
+    .select()
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserViewingHistory(
+  supabase: SupabaseClient,
+  userId: string,
+  limit: number = 50
+) {
+  const { data, error } = await supabase
+    .from('viewing_history')
+    .select(`
+      *,
+      events:event_id(*)
+    `)
+    .eq('user_id', userId)
+    .order('last_watched', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data as any[]
+}
+
 export async function endStreamSession(
   supabase: SupabaseClient,
   sessionId: string

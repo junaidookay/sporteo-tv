@@ -34,18 +34,69 @@ export default function WatchPage() {
         }
         setUser(user)
 
-        // Get event
-        const eventData = await getEventById(supabase, eventId)
+        // Get event - query directly to avoid any RLS issues
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .maybeSingle()
+
+        if (eventError) {
+          console.error('[v0] Database error:', eventError)
+          throw new Error('Failed to load event details')
+        }
+
         if (!eventData) {
           throw new Error('Event not found')
         }
 
-        // Check if stream is publicly visible
-        if (!eventData.is_publicly_live && eventData.status !== 'completed') {
+        // Check if stream is publicly visible or completed (admins can always view)
+        const isAdmin = user.user_metadata?.role === 'admin'
+        if (!isAdmin && !eventData.is_publicly_live && eventData.status !== 'completed') {
           throw new Error('This stream is not currently available. Please check back later.')
         }
 
+        // Check access: admins are free, others need subscription or purchase
+        let hasEventAccess = isAdmin
+        
+        if (!hasEventAccess && eventData.subscription_required) {
+          // Check if user has active subscription
+          const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle()
+          
+          hasEventAccess = !!subscription
+        }
+
+        if (!hasEventAccess && eventData.ticket_price_cents && eventData.ticket_price_cents > 0) {
+          // Check if user has purchased this event
+          const { data: purchase } = await supabase
+            .from('purchases')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('event_id', eventId)
+            .maybeSingle()
+          
+          hasEventAccess = !!purchase
+        }
+
+        if (!hasEventAccess) {
+          throw new Error('You do not have access to this event. Please purchase or subscribe.')
+        }
+
         setEvent(eventData)
+
+        // Track viewing history for paid users and admins
+        if (hasEventAccess && eventData.ticket_price_cents > 0) {
+          fetch('/api/viewing-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId }),
+          }).catch(err => console.error('Failed to track history:', err))
+        }
 
         // Generate unique device ID for this browser
         let deviceId = localStorage.getItem('deviceId')
