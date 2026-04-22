@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     )
 
     const data: any = await response.json()
+    console.log('Cloudflare API full response:', JSON.stringify(data, null, 2))
 
     if (!response.ok || !data.success) {
       console.error('Cloudflare API error:', data.errors)
@@ -78,12 +79,17 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInputId = data.result.uid
-    const streamKey = data.result.streamKey
+    const streamKey = data.result.streamKey || data.result.key || data.result['streamKey']
+
+    console.log('liveInputId:', liveInputId)
+    console.log('streamKey:', streamKey)
+    console.log('All result keys:', Object.keys(data.result || {}))
 
     return NextResponse.json({
       liveInputId,
       streamKey,
       rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
+      debugResultKeys: Object.keys(data.result || {}),
     })
   } catch (error) {
     console.error('Live stream creation error:', error)
