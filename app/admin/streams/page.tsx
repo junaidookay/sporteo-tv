@@ -441,15 +441,18 @@ export default function StreamsPage() {
 
                   {isPolling && selectedStream?.cloudflare_live_input_id && (
                     <div className="mt-4">
-                      <label className="block text-muted-foreground mb-2">Stream Preview</label>
+                      <label className="block text-muted-foreground mb-2">Stream Preview (HLS)</label>
                       <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
                         <iframe
-                          src={selectedStream.webRTCPlaybackUrl || ''}
+                          src={`https://${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/edge/${selectedStream.cloudflare_live_input_id}/player`}
                           className="w-full h-full"
-                          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                          allow="autoplay; fullscreen"
                           allowFullScreen
                         />
                       </div>
+                      <p className="text-xs mt-2 text-muted-foreground break-all">
+                        Direct URL: https://{cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/edge/{selectedStream.cloudflare_live_input_id}/player
+                      </p>
                     </div>
                   )}
 
