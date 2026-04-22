@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       streamKey,
       rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
       debugResultKeys: Object.keys(data.result || {}),
+      debugResult: data.result,
     })
   } catch (error) {
     console.error('Live stream creation error:', error)
