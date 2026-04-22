@@ -35,17 +35,17 @@ export default function WatchPage() {
         setUser(user)
 
         // Get event - query directly to avoid any RLS issues
-        const { data: eventData, error: eventError } = await supabase
+        const { data: eventsData, error: eventError } = await supabase
           .from('events')
           .select('*')
           .eq('id', eventId)
-          .maybeSingle()
 
         if (eventError) {
           console.error('[v0] Database error:', eventError)
           throw new Error('Failed to load event details')
         }
 
+        const eventData = eventsData?.[0]
         if (!eventData) {
           throw new Error('Event not found')
         }
