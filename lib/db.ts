@@ -16,6 +16,14 @@ export interface Event {
   subscription_required: boolean
   created_by: string
   bunny_stream_id: string | null
+  is_live: boolean
+  is_publicly_live: boolean
+  cloudflare_live_input_id: string | null
+  cloudflare_live_input_key: string | null
+  cloudflare_rtmps_url: string | null
+  cloudflare_customer_subdomain: string | null
+  cloudflare_rtmps_playback_key: string | null
+  replay_video_id: string | null
   created_at: string
   updated_at: string
 }
