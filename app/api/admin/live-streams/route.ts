@@ -60,52 +60,70 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           meta: {
-            name: event.title,
-            description: `Live stream for: ${event.title}`,
+            name: `Live: ${event.title}`,
+            description: `Live stream for ${event.title}`,
           },
           recording: {
-            mode: 'auto',
-            requireSignedURLs: false,
+            mode: 'automatic',
           },
+          rtmpsPlayback: {},
         }),
       }
     )
 
-    const data: any = await response.json()
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('Cloudflare error:', error)
+      return NextResponse.json(
+        { error: 'Failed to create live input', details: error },
+        { status: response.status }
+      )
+    }
 
-    if (!response.ok || !data.success) {
-      console.error('Cloudflare API error:', data.errors)
+    const data: any = await response.json()
+    if (!data.success) {
+      console.error('Cloudflare error:', data.errors)
       return NextResponse.json(
         { error: data.errors?.[0]?.message || 'Failed to create live input' },
         { status: 400 }
       )
     }
 
-    const liveInputId = data.result.uid
-    const streamKey = data.result.rtmps?.streamKey
-    const playbackKey = data.result.rtmpsPlayback?.streamKey
-    const webRTCPlaybackUrl = data.result.webRTCPlayback?.url
+    const liveInput = data.result
+    const liveInputId = liveInput.uid
+    const rtmpsStreamKey = liveInput.rtmps.streamKey
+    const rtmpsPlaybackKey = liveInput.rtmpsPlayback.streamKey
     
-    // Extract customer subdomain from webRTC URL (e.g., customer-bdeq5eyt2inz8uul)
-    const customerSubdomain = webRTCPlaybackUrl 
-      ? webRTCPlaybackUrl.match(/customer-([^.]+)\.cloudflarestream\.com/)?.[1]
-      : accountId
+    const webRTCUrl = liveInput.webRTCPlayback?.url || ''
+    const customerSubdomainMatch = webRTCUrl.match(/customer-([a-z0-9]+)\.cloudflarestream\.com/)
+    const customerSubdomain = customerSubdomainMatch ? customerSubdomainMatch[1] : accountId
 
-    return NextResponse.json({
-      liveInputId,
-      streamKey,
-      playbackKey,
-      webRTCPlaybackUrl,
-      customerSubdomain,
-      hlsManifestUrl: customerSubdomain 
-        ? `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/manifest/video.m3u8`
-        : null,
-      rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
-    })
-  } catch (error) {
-    console.error('Live stream creation error:', error)
+    await supabase
+      .from('events')
+      .update({
+        cloudflare_live_input_id: liveInputId,
+        cloudflare_stream_key: rtmpsStreamKey,
+        cloudflare_rtmps_url: `rtmps://live.cloudflare.com:443/live/`,
+        is_live: true,
+      })
+      .eq('id', eventId)
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        liveInputId,
+        rtmpsUrl: `rtmps://live.cloudflare.com:443/live/`,
+        rtmpsStreamKey,
+        rtmpsPlaybackKey,
+        playbackUrl: `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/iframe`,
+        hlsPlaybackUrl: `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/manifest/video.m3u8`,
+        webRTCPlaybackUrl: liveInput.webRTCPlayback?.url,
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Error creating live stream:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create live stream' },
       { status: 500 }
     )
   }
