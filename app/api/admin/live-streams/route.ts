@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
             mode: 'automatic',
           },
           rtmpsPlayback: {},
+          requireSignedURLs: true,
         }),
       }
     )
@@ -104,6 +105,8 @@ export async function POST(request: NextRequest) {
         cloudflare_live_input_id: liveInputId,
         cloudflare_stream_key: rtmpsStreamKey,
         cloudflare_rtmps_url: `rtmps://live.cloudflare.com:443/live/`,
+        cloudflare_customer_subdomain: customerSubdomain,
+        cloudflare_rtmps_playback_key: rtmpsPlaybackKey,
         is_live: true,
       })
       .eq('id', eventId)
@@ -111,6 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         liveInputId,
+        customerSubdomain,
         rtmpsUrl: `rtmps://live.cloudflare.com:443/live/`,
         rtmpsStreamKey,
         rtmpsPlaybackKey,

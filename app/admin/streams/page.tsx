@@ -103,6 +103,8 @@ export default function StreamsPage() {
                 cloudflare_live_input_id: data.liveInputId,
                 cloudflare_stream_key: data.rtmpsStreamKey,
                 cloudflare_rtmps_url: data.rtmpsUrl,
+                cloudflare_customer_subdomain: data.customerSubdomain,
+                cloudflare_rtmps_playback_key: data.rtmpsPlaybackKey,
                 is_live: true,
               }
             : e
@@ -115,6 +117,8 @@ export default function StreamsPage() {
           cloudflare_live_input_id: data.liveInputId,
           cloudflare_stream_key: data.rtmpsStreamKey,
           cloudflare_rtmps_url: data.rtmpsUrl,
+          cloudflare_customer_subdomain: data.customerSubdomain,
+          cloudflare_rtmps_playback_key: data.rtmpsPlaybackKey,
           is_live: true,
         }))
       }
@@ -257,14 +261,19 @@ export default function StreamsPage() {
 
                     <h3 className="font-black text-lg mb-4">{event.title}</h3>
 
-                    {event.cloudflare_live_input_id && (
+                    {event.cloudflare_live_input_id && event.cloudflare_customer_subdomain && (
                       <div className="mb-6 bg-black rounded-lg overflow-hidden aspect-video border border-border">
                         <iframe
-                          src={event.hlsPlaybackUrl || `https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${event.cloudflare_live_input_id}/iframe`}
+                          src={`https://customer-${event.cloudflare_customer_subdomain}.cloudflarestream.com/${event.cloudflare_live_input_id}/iframe`}
                           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                           allowFullScreen
                           className="w-full h-full"
                         />
+                      </div>
+                    )}
+                    {event.cloudflare_live_input_id && !event.cloudflare_customer_subdomain && (
+                      <div className="mb-6 bg-secondary rounded-lg overflow-hidden aspect-video border border-border flex items-center justify-center">
+                        <p className="text-muted-foreground text-sm">Loading preview...</p>
                       </div>
                     )}
 
