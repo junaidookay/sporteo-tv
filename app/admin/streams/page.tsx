@@ -135,11 +135,13 @@ export default function StreamsPage() {
           cloudflare_stream_key: data.streamKey,
           cloudflare_playback_key: data.playbackKey,
           cloudflare_webrtc_url: data.webRTCPlaybackUrl,
+          cloudflare_customer_id: data.customerSubdomain,
+          cloudflare_hls_url: data.hlsManifestUrl,
         })
         .eq('id', eventId)
 
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl } : e)))
-      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl })
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl, cloudflare_customer_id: data.customerSubdomain, cloudflare_hls_url: data.hlsManifestUrl } : e)))
+      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl, cloudflare_customer_id: data.customerSubdomain, cloudflare_hls_url: data.hlsManifestUrl })
       setStreamKey(data.streamKey || data.liveInputId)
     } catch (error) {
       console.error('Failed to generate stream key:', error)
@@ -444,14 +446,14 @@ export default function StreamsPage() {
                       <label className="block text-muted-foreground mb-2">Stream Preview (HLS)</label>
                       <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
                         <iframe
-                          src={`https://${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/edge/${selectedStream.cloudflare_live_input_id}/player`}
+                          src={`https://customer-${selectedStream.cloudflare_customer_id || cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
                           className="w-full h-full"
                           allow="autoplay; fullscreen"
                           allowFullScreen
                         />
                       </div>
                       <p className="text-xs mt-2 text-muted-foreground break-all">
-                        Direct URL: https://{cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/edge/{selectedStream.cloudflare_live_input_id}/player
+                        Direct URL: https://customer-{selectedStream.cloudflare_customer_id || cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/{selectedStream.cloudflare_live_input_id}/iframe
                       </p>
                     </div>
                   )}

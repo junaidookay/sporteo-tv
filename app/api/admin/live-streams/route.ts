@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
             name: event.title,
             description: `Live stream for: ${event.title}`,
           },
+          recording: {
+            mode: 'auto',
+            requireSignedURLs: false,
+          },
         }),
       }
     )
@@ -81,12 +85,21 @@ export async function POST(request: NextRequest) {
     const streamKey = data.result.rtmps?.streamKey
     const playbackKey = data.result.rtmpsPlayback?.streamKey
     const webRTCPlaybackUrl = data.result.webRTCPlayback?.url
+    
+    // Extract customer subdomain from webRTC URL (e.g., customer-bdeq5eyt2inz8uul)
+    const customerSubdomain = webRTCPlaybackUrl 
+      ? webRTCPlaybackUrl.match(/customer-([^.]+)\.cloudflarestream\.com/)?.[1]
+      : accountId
 
     return NextResponse.json({
       liveInputId,
       streamKey,
       playbackKey,
       webRTCPlaybackUrl,
+      customerSubdomain,
+      hlsManifestUrl: customerSubdomain 
+        ? `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/manifest/video.m3u8`
+        : null,
       rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
     })
   } catch (error) {
