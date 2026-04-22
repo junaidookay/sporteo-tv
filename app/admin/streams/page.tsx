@@ -124,6 +124,7 @@ export default function StreamsPage() {
       const data = await response.json()
       console.log('Response data:', data)
       console.log('streamKey from API:', data.streamKey)
+      console.log('DEBUG RESULT:', data.debugResult)
 
       if (!data.liveInputId) {
         throw new Error('No live input ID returned')
