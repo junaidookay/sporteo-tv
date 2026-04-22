@@ -123,10 +123,13 @@ export default function StreamsPage() {
 
       const data = await response.json()
       console.log('Response data:', data)
+      console.log('streamKey from API:', data.streamKey)
 
       if (!data.liveInputId) {
         throw new Error('No live input ID returned')
       }
+
+      console.log('Saving to DB - liveInputId:', data.liveInputId, 'streamKey:', data.streamKey)
 
       await supabase
         .from('events')
