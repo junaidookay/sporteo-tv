@@ -101,10 +101,10 @@ export async function getEventById(id: string) {
     .from('events')
     .select('*')
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   if (error) throw error
-  return data as Event
+  return data as Event | null
 }
 
 export async function createEvent(event: Omit<Event, 'id' | 'created_at' | 'updated_at'>) {

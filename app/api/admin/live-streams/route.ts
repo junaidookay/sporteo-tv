@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
         playbackUrl: `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/iframe`,
         hlsPlaybackUrl: `https://customer-${customerSubdomain}.cloudflarestream.com/${liveInputId}/manifest/video.m3u8`,
         webRTCPlaybackUrl: liveInput.webRTCPlayback?.url,
+        requireSignedURLs: liveInput.requireSignedURLs || true,
       },
       { status: 201 }
     )
