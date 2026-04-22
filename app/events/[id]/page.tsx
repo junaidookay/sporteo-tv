@@ -33,6 +33,13 @@ export default function EventDetailPage() {
 
         // Get event details
         const eventData = await getEventById(supabase, eventId)
+        
+        if (!eventData) {
+          setError('Event not found')
+          setLoading(false)
+          return
+        }
+        
         setEvent(eventData)
 
         if (user) {
