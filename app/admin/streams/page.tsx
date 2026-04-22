@@ -434,34 +434,28 @@ export default function StreamsPage() {
                       >
                         {isPolling ? 'Stop Preview' : 'Start Preview'}
                       </Button>
-                      {streamStatus && (
-                        <p className="text-xs mt-2 text-muted-foreground">
-                          Status: <span className={streamStatus.enabled ? 'text-green-600' : 'text-yellow-600'}>{streamStatus.status}</span>
-                        </p>
-                      )}
                     </div>
                   )}
 
                   {isPolling && selectedStream?.cloudflare_live_input_id && (
                     <div className="mt-4">
                       <label className="block text-muted-foreground mb-2">Stream Preview</label>
-                      {streamStatus?.enabled ? (
-                        <div className="w-full">
-                          <video
-                            controls
-                            autoPlay
-                            playsInline
-                            className="w-full aspect-video bg-black rounded-lg"
-                            src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/manifest/video.m3u8`}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full aspect-video bg-secondary rounded-lg border border-border flex items-center justify-center">
-                          <p className="text-muted-foreground text-sm">
-                            {streamStatus?.status === 'disconnected' ? 'Waiting for OBS stream... Make sure OBS is connected.' : 'Stream not active yet. Start streaming in OBS first.'}
-                          </p>
-                        </div>
-                      )}
+                      <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+                        <iframe
+                          src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <p className="text-xs mt-2 text-muted-foreground">
+                        Or open directly: <a 
+                          href={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >Cloudflare Player</a>
+                      </p>
                     </div>
                   )}
 
