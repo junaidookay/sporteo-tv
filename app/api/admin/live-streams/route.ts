@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const liveInputId = data.result.uid
-    const streamKey = data.result.streamKey || data.result.key || data.result['streamKey']
+    const streamKey = data.result.rtmps?.streamKey
 
     console.log('liveInputId:', liveInputId)
     console.log('streamKey:', streamKey)
