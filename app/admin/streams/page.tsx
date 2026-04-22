@@ -133,11 +133,13 @@ export default function StreamsPage() {
         .update({
           cloudflare_live_input_id: data.liveInputId,
           cloudflare_stream_key: data.streamKey,
+          cloudflare_playback_key: data.playbackKey,
+          cloudflare_webrtc_url: data.webRTCPlaybackUrl,
         })
         .eq('id', eventId)
 
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey } : e)))
-      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey })
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl } : e)))
+      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey, cloudflare_playback_key: data.playbackKey, webRTCPlaybackUrl: data.webRTCPlaybackUrl })
       setStreamKey(data.streamKey || data.liveInputId)
     } catch (error) {
       console.error('Failed to generate stream key:', error)
@@ -442,20 +444,12 @@ export default function StreamsPage() {
                       <label className="block text-muted-foreground mb-2">Stream Preview</label>
                       <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
                         <iframe
-                          src={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
+                          src={selectedStream.webRTCPlaybackUrl || ''}
                           className="w-full h-full"
                           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
                       </div>
-                      <p className="text-xs mt-2 text-muted-foreground">
-                        Or open directly: <a 
-                          href={`https://customer-${cloudflareConfig?.cloudflareAccountId}.cloudflarestream.com/${selectedStream.cloudflare_live_input_id}/iframe`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >Cloudflare Player</a>
-                      </p>
                     </div>
                   )}
 

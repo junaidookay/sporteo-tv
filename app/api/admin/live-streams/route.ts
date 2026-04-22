@@ -79,10 +79,14 @@ export async function POST(request: NextRequest) {
 
     const liveInputId = data.result.uid
     const streamKey = data.result.rtmps?.streamKey
+    const playbackKey = data.result.rtmpsPlayback?.streamKey
+    const webRTCPlaybackUrl = data.result.webRTCPlayback?.url
 
     return NextResponse.json({
       liveInputId,
       streamKey,
+      playbackKey,
+      webRTCPlaybackUrl,
       rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
     })
   } catch (error) {

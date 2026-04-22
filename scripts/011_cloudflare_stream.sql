@@ -2,6 +2,8 @@
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_live_input_id TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_stream_id TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_stream_key TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_playback_key TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_webrtc_url TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS is_live BOOLEAN DEFAULT FALSE;
 
 -- Create index for faster queries
