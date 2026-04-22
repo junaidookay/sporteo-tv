@@ -1,42 +1,17 @@
+'use server'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { loadSettings } from '@/app/actions/settings'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
-
-async function getCloudflareSettings() {
-  const { data: rows, error } = await supabase
-    .from('platform_settings')
-    .select('key, value')
-
-  if (error || !rows) {
-    throw new Error('Failed to load settings')
-  }
-
-  const settings: Record<string, string> = {}
-  for (const row of rows) {
-    settings[row.key] = row.value
-  }
-
-  return {
-    accountId: settings.cloudflare_account_id || '',
-    apiToken: settings.cloudflare_api_token || '',
-  }
-}
+const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const supabase = await createClient()
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !user) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -57,9 +32,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Live Input ID is required' }, { status: 400 })
     }
 
-    const cloudflare = await getCloudflareSettings()
-    const accountId = cloudflare.accountId
-    const apiToken = cloudflare.apiToken
+    const settings = await loadSettings()
+    const accountId = settings.cloudflareAccountId
+    const apiToken = settings.cloudflareApiToken
 
     if (!accountId || !apiToken) {
       return NextResponse.json(
@@ -69,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${liveInputId}`,
+      `${CLOUDFLARE_API_BASE}/accounts/${accountId}/stream/live_inputs/${liveInputId}`,
       {
         method: 'GET',
         headers: {
@@ -91,7 +66,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: data.result?.status || 'unknown',
       enabled: data.result?.enabled || false,
-      deleted: data.result?.deleted || false,
     })
   } catch (error) {
     console.error('Error getting stream status:', error)

@@ -124,16 +124,21 @@ export default function StreamsPage() {
       const data = await response.json()
       console.log('Response data:', data)
 
+      if (!data.liveInputId) {
+        throw new Error('No live input ID returned')
+      }
+
       await supabase
         .from('events')
         .update({
-          cloudflare_live_input_id: data.liveInputId
+          cloudflare_live_input_id: data.liveInputId,
+          cloudflare_stream_key: data.streamKey,
         })
         .eq('id', eventId)
 
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId } : e)))
-      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId })
-      setStreamKey(data.liveInputId)
+      setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey } : e)))
+      setSelectedStream({ ...event, cloudflare_live_input_id: data.liveInputId, cloudflare_stream_key: data.streamKey })
+      setStreamKey(data.streamKey || data.liveInputId)
     } catch (error) {
       console.error('Failed to generate stream key:', error)
       alert('Failed to generate stream key: ' + (error instanceof Error ? error.message : 'Unknown error'))
@@ -389,7 +394,7 @@ export default function StreamsPage() {
                       <p className="text-muted-foreground">
                         <strong>RTMPS Server:</strong> rtmps://live.cloudflare.com:443/live/
                         <br />
-                        <strong>Stream Key:</strong> {streamKey || selectedStream?.cloudflare_live_input_id || '[Generate stream key above]'}
+                        <strong>Stream Key:</strong> <span className="font-mono text-primary">{streamKey || selectedStream?.cloudflare_stream_key || selectedStream?.cloudflare_live_input_id || '[Generate stream key above]'}</span>
                         <br />
                         <br />
                         <span className="text-yellow-600">Make sure to use the exact stream key shown above (it may differ from the live input ID).</span>

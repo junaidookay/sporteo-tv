@@ -1,89 +1,18 @@
+'use server'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { loadSettings } from '@/app/actions/settings'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
-
-async function getCloudflareSettings() {
-  const { data: rows, error } = await supabase
-    .from('platform_settings')
-    .select('key, value')
-
-  if (error || !rows) {
-    throw new Error('Failed to load settings')
-  }
-
-  const settings: Record<string, string> = {}
-  for (const row of rows) {
-    settings[row.key] = row.value
-  }
-
-  return {
-    accountId: settings.cloudflare_account_id || '',
-    apiToken: settings.cloudflare_api_token || '',
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !user) {
-      console.error('Auth error:', authError)
-      if (authError?.message?.includes('Invalid JWT') || authError?.message?.includes('expired')) {
-        return NextResponse.json({ error: 'Session expired. Please log out and log back in.' }, { status: 401 })
-      }
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const { data: events, error } = await supabase
-      .from('events')
-      .select('id, title, cloudflare_live_input_id, is_live, status, start_time')
-      .not('cloudflare_live_input_id', 'is', null)
-      .order('start_time', { ascending: false })
-
-    if (error) throw error
-
-    return NextResponse.json({ events })
-  } catch (error) {
-    console.error('Error fetching live streams:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch live streams' },
-      { status: 500 }
-    )
-  }
-}
+const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4'
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const supabase = await createClient()
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
@@ -93,39 +22,36 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!profile?.is_admin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
-    const { eventId } = await request.json()
+    const body = await request.json()
+    const { eventId } = body
+
     if (!eventId) {
-      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Event ID required' }, { status: 400 })
     }
 
-    const cloudflare = await getCloudflareSettings()
-    const accountId = cloudflare.accountId
-    const apiToken = cloudflare.apiToken
-
-    console.log('Cloudflare settings loaded:', { accountId: !!accountId, apiToken: !!apiToken })
-
-    if (!accountId || !apiToken) {
-      return NextResponse.json(
-        { error: 'Cloudflare is not configured. Please add credentials in Admin Settings.' },
-        { status: 503 }
-      )
-    }
-
-    const { data: event, error: eventError } = await supabase
+    const { data: event } = await supabase
       .from('events')
       .select('id, title')
       .eq('id', eventId)
       .single()
 
-    if (eventError || !event) {
+    if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    const liveInputResponse = await fetch(
-      `https://api.realtime.cloudflare.com/v2/livestreams`,
+    const settings = await loadSettings()
+    const accountId = settings.cloudflareAccountId
+    const apiToken = settings.cloudflareApiToken
+
+    if (!accountId || !apiToken) {
+      return NextResponse.json({ error: 'Cloudflare Stream not configured' }, { status: 400 })
+    }
+
+    const response = await fetch(
+      `${CLOUDFLARE_API_BASE}/accounts/${accountId}/stream/live_inputs`,
       {
         method: 'POST',
         headers: {
@@ -133,69 +59,36 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: event.title,
+          meta: {
+            name: event.title,
+            description: `Live stream for: ${event.title}`,
+          },
         }),
       }
     )
 
-    const liveInputData: any = await liveInputResponse.json()
-    console.log('Cloudflare response status:', liveInputResponse.status)
-    console.log('Cloudflare response:', JSON.stringify(liveInputData))
+    const data: any = await response.json()
 
-    if (!liveInputResponse.ok) {
-      console.error('Cloudflare API error:', liveInputData)
+    if (!response.ok || !data.success) {
+      console.error('Cloudflare API error:', data.errors)
       return NextResponse.json(
-        { error: 'Cloudflare API error: ' + JSON.stringify(liveInputData.error || liveInputData.message || 'HTTP ' + liveInputResponse.status) },
-        { status: liveInputResponse.status }
-      )
-    }
-
-    const liveInput = liveInputData.data
-    console.log('Full Cloudflare live stream response:', JSON.stringify(liveInput, null, 2))
-
-    const streamId = liveInput?.id
-    const streamKey = liveInput?.stream_key
-    const ingestServer = liveInput?.ingest_server
-    const playbackUrl = liveInput?.playback_url
-
-    if (!streamId) {
-      console.error('No stream ID in response:', liveInput)
-      return NextResponse.json(
-        { error: 'Failed to get stream ID from Cloudflare response' },
+        { error: data.errors?.[0]?.message || 'Failed to create live input' },
         { status: 400 }
       )
     }
 
-    console.log('Live stream created:', { streamId, streamKey, ingestServer, playbackUrl })
+    const liveInputId = data.result.uid
+    const streamKey = data.result.streamKey
 
-    // Update event with stream ID
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ cloudflare_live_input_id: streamId })
-      .eq('id', eventId)
-
-    if (updateError) {
-      console.error('Failed to update event:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update event: ' + updateError.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        liveInputId: streamId,
-        rtmpUrl: ingestServer || `rtmps://live.cloudflare.com:443/live/`,
-        rtmpsUrl: ingestServer || `rtmps://live.cloudflare.com:443/live/`,
-        streamKey: streamKey,
-        playbackUrl: playbackUrl,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({
+      liveInputId,
+      streamKey,
+      rtmpUrl: `rtmps://live.cloudflare.com:443/live/`,
+    })
   } catch (error) {
-    console.error('Error creating live stream:', error)
+    console.error('Live stream creation error:', error)
     return NextResponse.json(
-      { error: 'Failed to create live stream: ' + (error instanceof Error ? error.message : 'Unknown error') },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     )
   }
