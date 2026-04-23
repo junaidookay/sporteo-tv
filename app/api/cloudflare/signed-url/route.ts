@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
-
-async function getCloudflareSettings() {
+async function getCloudflareSettings(supabase: any) {
   const { data: rows, error } = await supabase
     .from('platform_settings')
     .select('key, value')
@@ -28,15 +23,25 @@ async function getCloudflareSettings() {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.error('[signed-url] Auth error:', authError)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { videoId, expiresIn = 14400, isLive = false } = await request.json()
 
-    console.log('[signed-url] Request received:', { videoId, expiresIn, isLive })
+    console.log('[signed-url] Request received:', { videoId, expiresIn, isLive, userId: user.id })
 
     if (!videoId) {
       return NextResponse.json({ error: 'Video ID is required' }, { status: 400 })
     }
 
-    const cloudflare = await getCloudflareSettings()
+    const cloudflare = await getCloudflareSettings(supabase)
     const accountId = cloudflare.accountId
     const apiToken = cloudflare.apiToken
 
