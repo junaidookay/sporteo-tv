@@ -108,9 +108,10 @@ export async function POST(request: NextRequest) {
       expiresIn,
     })
   } catch (error) {
-    console.error('[signed-url] Error:', error)
+    console.error('[signed-url] Unexpected error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to generate signed URL: ' + (error instanceof Error ? error.message : 'Unknown error') },
+      { error: 'Server error: ' + message },
       { status: 500 }
     )
   }
