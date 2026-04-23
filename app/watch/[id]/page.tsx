@@ -109,48 +109,43 @@ export default function WatchPage() {
 
         // Generate stream URL
         let url = ''
-        if (eventData.cloudflare_live_input_id && eventData.cloudflare_customer_subdomain) {
-          // Use Cloudflare signed token for live streams
+        const isCompleted = eventData.status === 'completed'
+
+        // For completed events, use cloudflare_stream_id (replay)
+        // For live events, use cloudflare_live_input_id
+        const videoId = isCompleted ? eventData.cloudflare_stream_id : eventData.cloudflare_live_input_id
+        const isLive = !isCompleted
+
+        if (videoId && eventData.cloudflare_customer_subdomain) {
+          // Use Cloudflare signed token
           try {
             const response = await fetch('/api/cloudflare/signed-url', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                videoId: eventData.cloudflare_live_input_id,
+                videoId: videoId,
                 expiresIn: 14400, // 4 hours
-                isLive: true,
+                isLive: isLive,
               }),
             })
+
             if (response.ok) {
               const data = await response.json()
               if (data.token) {
                 url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${data.token}/iframe`
+              } else if (data.error) {
+                console.error('[watch] Signed URL error:', data.error)
               }
-            }
-          } catch (err) {
-            console.error('Error getting Cloudflare live URL:', err)
-          }
-        } else if (eventData.cloudflare_stream_id) {
-          // Use signed token for VOD
-          try {
-            const response = await fetch('/api/cloudflare/signed-url', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                videoId: eventData.cloudflare_stream_id,
-                expiresIn: 14400,
-                isLive: false,
-              }),
-            })
-            if (response.ok) {
+            } else {
               const data = await response.json()
-              if (data.token) {
-                url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${data.token}/iframe`
-              }
+              console.error('[watch] Signed URL failed:', response.status, data)
             }
           } catch (err) {
-            console.error('Error getting Cloudflare VOD URL:', err)
+            console.error('Error getting Cloudflare URL:', err)
           }
+        } else if (eventData.cloudflare_live_input_id && eventData.cloudflare_customer_subdomain) {
+          // Fallback: use live input directly (for when recording is still processing)
+          url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${eventData.cloudflare_live_input_id}/iframe`
         }
         // Bunny.net fallback is disabled - using Cloudflare only
         setStreamUrl(url)
