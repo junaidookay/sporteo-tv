@@ -6,7 +6,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_rtmps_url TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_customer_subdomain TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS cloudflare_rtmps_playback_key TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS is_live BOOLEAN DEFAULT FALSE;
-ALTER TABLE events ADD COLUMN IF NOT EXISTS is_publicly_live BOOLEAN DEFAULT FALSE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS is_publicly_live BOOLEAN DEFAULT TRUE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS live_started_at TIMESTAMP WITH TIME ZONE;
 
 -- Create index for faster queries
