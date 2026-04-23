@@ -94,31 +94,49 @@ export default function WatchPage() {
         // Generate stream URL
         let url = ''
         if (eventData.cloudflare_live_input_id && eventData.cloudflare_customer_subdomain) {
-          // Use Cloudflare native iframe for live streams
-          url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${eventData.cloudflare_live_input_id}/iframe`
+          // Use Cloudflare signed token for live streams
+          try {
+            const response = await fetch('/api/cloudflare/signed-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                videoId: eventData.cloudflare_live_input_id,
+                expiresIn: 14400, // 4 hours
+                isLive: true,
+              }),
+            })
+            if (response.ok) {
+              const data = await response.json()
+              if (data.token) {
+                url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${data.token}/iframe`
+              }
+            }
+          } catch (err) {
+            console.error('Error getting Cloudflare live URL:', err)
+          }
         } else if (eventData.cloudflare_stream_id) {
-          // Use signed URL for VOD
+          // Use signed token for VOD
           try {
             const response = await fetch('/api/cloudflare/signed-url', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 videoId: eventData.cloudflare_stream_id,
-                expiresIn: 3600,
+                expiresIn: 14400,
+                isLive: false,
               }),
             })
             if (response.ok) {
               const data = await response.json()
-              url = data.signedUrl || data.url
+              if (data.token) {
+                url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${data.token}/iframe`
+              }
             }
           } catch (err) {
-            console.error('Error getting Cloudflare URL:', err)
+            console.error('Error getting Cloudflare VOD URL:', err)
           }
         }
         // Bunny.net fallback is disabled - using Cloudflare only
-        // else if (eventData.bunny_stream_id) {
-        //   url = `https://${eventData.bunny_cdn_hostname || 'bunkmcdm.b-cdn.net'}/${eventData.bunny_stream_id}/playlist.m3u8`
-        // }
         setStreamUrl(url)
       } catch (err) {
         console.error('Failed to load stream:', err)
