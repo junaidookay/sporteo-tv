@@ -77,19 +77,21 @@ export default function EventDetailPage() {
           setPurchase(purchaseData)
 
           console.log('[events/id] Checking subscription for user:', user.id)
-          // Check subscription
+          // Check subscription - use limit(1) to avoid PGRST116 error from duplicates
           const { data: subData, error: subError } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', user.id)
             .eq('status', 'active')
-            .maybeSingle()
+            .limit(1)
 
           console.log('[events/id] Subscription query result:', { subData, subError })
-          if (subError) {
+          // Suppress PGRST116 error (duplicates) but log other errors
+          if (subError && subError.code !== 'PGRST116') {
             console.error('[events/id] Subscription query error:', subError)
           }
-          setSubscription(subData)
+          // Use first result if there are duplicates
+          setSubscription(subData?.[0] || null)
         }
 
         console.log('[events/id] Data loaded successfully')
