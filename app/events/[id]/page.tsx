@@ -7,7 +7,7 @@ import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { getEventById, getPurchase, getUserSubscription } from '@/lib/db-client'
+import { getEvent, getPurchase, getUserSubscription } from '@/lib/db-client'
 
 export default function EventDetailPage() {
   const params = useParams()
@@ -32,7 +32,7 @@ export default function EventDetailPage() {
         setUser(user)
 
         // Get event details
-        const eventData = await getEventById(supabase, eventId)
+        const eventData = await getEvent(supabase, eventId)
         
         if (!eventData) {
           setError('Event not found')

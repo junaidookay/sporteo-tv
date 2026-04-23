@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { LiveStreamCard } from '@/components/live-stream-card'
-import { getEvents, getUserSubscription, getPurchase } from '@/lib/db'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,20 +9,29 @@ export const revalidate = 60
 export const dynamic = 'force-dynamic'
 
 export default async function LivePage() {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  let hasSubscription = false
-  let activePurchase = null
-  
-  if (user) {
-    const subscription = await getUserSubscription(user.id)
-    hasSubscription = !!subscription
-  }
+  let liveEvents: any[] = []
+  let error: string | null = null
 
-  const liveEvents = await getEvents({ status: 'live', upcoming: false })
-  const publiclyLiveEvents = liveEvents.filter((e) => e.is_publicly_live === true)
+  try {
+    const supabase = await createClient()
+
+    const { data, error: fetchError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('status', 'live')
+      .eq('is_publicly_live', true)
+      .order('start_time', { ascending: false })
+
+    if (fetchError) {
+      console.error('[live page] Error fetching live events:', fetchError)
+      error = 'Failed to load live events'
+    } else {
+      liveEvents = data || []
+    }
+  } catch (err) {
+    console.error('[live page] Unexpected error:', err)
+    error = 'Failed to load live events'
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -37,9 +45,19 @@ export default async function LivePage() {
           </p>
         </div>
 
-        {publiclyLiveEvents.length > 0 ? (
+        {error ? (
+          <Card className="p-12 border-border text-center">
+            <p className="text-2xl font-black mb-4 text-destructive">Error Loading Events</p>
+            <p className="text-muted-foreground mb-8">{error}</p>
+            <Link href="/events">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Browse Upcoming Events
+              </Button>
+            </Link>
+          </Card>
+        ) : liveEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publiclyLiveEvents.map((event) => (
+            {liveEvents.map((event) => (
               <LiveStreamCard key={event.id} event={event} />
             ))}
           </div>
