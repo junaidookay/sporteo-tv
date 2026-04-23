@@ -18,6 +18,9 @@ export default function WatchPage() {
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [hasAccess, setHasAccess] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [hasPurchased, setHasPurchased] = useState(false)
+  const [addingToLibrary, setAddingToLibrary] = useState(false)
 
   useEffect(() => {
     const loadStreamData = async () => {
@@ -54,13 +57,25 @@ export default function WatchPage() {
           .eq('id', user.id)
           .single()
 
-        const isAdmin = profile?.is_admin === true
-        if (!isAdmin && !eventData.is_publicly_live && eventData.status !== 'completed') {
+        const admin = profile?.is_admin === true
+        setIsAdmin(admin)
+
+        if (!admin && !eventData.is_publicly_live && eventData.status !== 'completed') {
           throw new Error('This stream is not currently available. Please check back later.')
         }
 
         // Check access: admins can always view, others need subscription or purchase
-        let hasEventAccess = isAdmin
+        let hasEventAccess = admin
+
+        // Check purchase (for non-admins or if admin wants to add to library)
+        const { data: purchaseData } = await supabase
+          .from('purchases')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('event_id', eventId)
+          .maybeSingle()
+
+        setHasPurchased(!!purchaseData)
 
         if (!hasEventAccess && eventData.subscription_required) {
           const { data: subscription } = await supabase
@@ -149,6 +164,35 @@ export default function WatchPage() {
 
     loadStreamData()
   }, [eventId])
+
+  const handleAddToLibrary = async () => {
+    if (!user || !event) return
+
+    setAddingToLibrary(true)
+    try {
+      const { error } = await supabase
+        .from('purchases')
+        .insert({
+          user_id: user.id,
+          event_id: event.id,
+          amount_cents: event.ticket_price_cents || 0,
+          status: 'completed',
+        })
+
+      if (error) throw error
+
+      setHasPurchased(true)
+      setHasAccess(true)
+
+      // Reload to get stream URL
+      window.location.reload()
+    } catch (err) {
+      console.error('Failed to add to library:', err)
+      alert('Failed to add to library')
+    } finally {
+      setAddingToLibrary(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -259,10 +303,26 @@ export default function WatchPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            {event.ticket_price_cents > 0 && (
+            {isAdmin && !hasPurchased && (
+              <Card className="p-6 mb-6 border-border border-primary">
+                <h3 className="text-lg font-black mb-2">👋 ADMIN</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  As an admin, you have full access. Add this event to your library to test the purchase flow.
+                </p>
+                <Button
+                  onClick={handleAddToLibrary}
+                  disabled={addingToLibrary}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {addingToLibrary ? 'Adding...' : 'Add to My Library'}
+                </Button>
+              </Card>
+            )}
+
+            {hasPurchased && (
               <Card className="p-6 mb-6 border-border">
-                <h3 className="text-lg font-black mb-2">PURCHASE INFO</h3>
-                <p className="text-sm text-muted-foreground mb-2">You have purchased access to this event.</p>
+                <h3 className="text-lg font-black mb-2">✓ IN YOUR LIBRARY</h3>
+                <p className="text-sm text-muted-foreground mb-2">You have access to this event.</p>
                 <p className="text-xs text-muted-foreground">
                   Transaction ID: {event.id.slice(0, 8)}...
                 </p>
