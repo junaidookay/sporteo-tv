@@ -6,8 +6,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import Checkout from '@/components/checkout'
 import { createClient } from '@/lib/supabase/client'
-import { getEvent, getPurchase, getUserSubscription } from '@/lib/db-client'
+import { getPurchase, getUserSubscription } from '@/lib/db-client'
 
 export default function EventDetailPage() {
   const params = useParams()
@@ -31,15 +32,18 @@ export default function EventDetailPage() {
         } = await supabase.auth.getUser()
         setUser(user)
 
-        // Get event details
-        const eventData = await getEvent(supabase, eventId)
-        
-        if (!eventData) {
-          setError('Event not found')
-          setLoading(false)
-          return
+        // Get event details directly from supabase without RLS complications
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .maybeSingle()
+
+        if (eventError) {
+          console.error('[v0] Event query error:', eventError)
+          throw new Error('Failed to load event')
         }
-        
+
         setEvent(eventData)
 
         if (user) {
@@ -60,7 +64,7 @@ export default function EventDetailPage() {
     }
 
     loadData()
-  }, [eventId])
+  }, [eventId, supabase])
 
   if (loading) {
     return (
@@ -246,11 +250,12 @@ export default function EventDetailPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Pay per view: ${(event.ticket_price_cents / 100).toFixed(2)}
                   </p>
-                  <Link href={`/checkout/${eventId}`} className="w-full block">
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                      Buy Access
-                    </Button>
-                  </Link>
+                  <Button 
+                    onClick={() => router.push(`/checkout/${eventId}`)}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Buy Access
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -283,6 +288,8 @@ export default function EventDetailPage() {
           </div>
         </div>
       </main>
+
+
     </div>
   )
 }
