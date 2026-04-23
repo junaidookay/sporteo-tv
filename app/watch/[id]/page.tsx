@@ -108,9 +108,11 @@ export default function WatchPage() {
           } catch (err) {
             console.error('Error getting Cloudflare URL:', err)
           }
-        } else if (eventData.bunny_stream_id) {
-          url = `https://${eventData.bunny_cdn_hostname || 'bunkmcdm.b-cdn.net'}/${eventData.bunny_stream_id}/playlist.m3u8`
         }
+        // Bunny.net fallback is disabled - using Cloudflare only
+        // else if (eventData.bunny_stream_id) {
+        //   url = `https://${eventData.bunny_cdn_hostname || 'bunkmcdm.b-cdn.net'}/${eventData.bunny_stream_id}/playlist.m3u8`
+        // }
         setStreamUrl(url)
       } catch (err) {
         console.error('Failed to load stream:', err)
