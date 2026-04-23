@@ -26,10 +26,13 @@ export default function EventDetailPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('[events/id] Starting to load data for eventId:', eventId)
+
         // Get current user
         const {
           data: { user },
         } = await supabase.auth.getUser()
+        console.log('[events/id] User:', user?.id)
         setUser(user)
 
         // Get event details directly from supabase without RLS complications
@@ -39,25 +42,60 @@ export default function EventDetailPage() {
           .eq('id', eventId)
           .maybeSingle()
 
+        console.log('[events/id] Event query result:', { eventData, eventError })
+
         if (eventError) {
-          console.error('[v0] Event query error:', eventError)
-          throw new Error('Failed to load event')
+          console.error('[events/id] Event query error:', eventError)
+          setError('Failed to load event: ' + eventError.message)
+          setLoading(false)
+          return
+        }
+
+        if (!eventData) {
+          console.error('[events/id] No event found')
+          setError('Event not found')
+          setLoading(false)
+          return
         }
 
         setEvent(eventData)
 
         if (user) {
+          console.log('[events/id] Checking purchase for user:', user.id)
           // Check purchase
-          const purchaseData = await getPurchase(supabase, user.id, eventId)
+          const { data: purchaseData, error: purchaseError } = await supabase
+            .from('purchases')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('event_id', eventId)
+            .maybeSingle()
+
+          console.log('[events/id] Purchase query result:', { purchaseData, purchaseError })
+          if (purchaseError) {
+            console.error('[events/id] Purchase query error:', purchaseError)
+          }
           setPurchase(purchaseData)
 
+          console.log('[events/id] Checking subscription for user:', user.id)
           // Check subscription
-          const subData = await getUserSubscription(supabase, user.id)
+          const { data: subData, error: subError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle()
+
+          console.log('[events/id] Subscription query result:', { subData, subError })
+          if (subError) {
+            console.error('[events/id] Subscription query error:', subError)
+          }
           setSubscription(subData)
         }
+
+        console.log('[events/id] Data loaded successfully')
       } catch (err) {
-        console.error('Failed to load event:', err)
-        setError('Failed to load event')
+        console.error('[events/id] Unexpected error:', err)
+        setError('Failed to load event: ' + (err instanceof Error ? err.message : 'Unknown error'))
       } finally {
         setLoading(false)
       }
