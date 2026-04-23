@@ -48,12 +48,18 @@ export default function WatchPage() {
         const eventData = eventsData
 
         // Check if stream is publicly visible or completed (admins can always view)
-        const isAdmin = user.user_metadata?.role === 'admin'
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        const isAdmin = profile?.is_admin === true
         if (!isAdmin && !eventData.is_publicly_live && eventData.status !== 'completed') {
           throw new Error('This stream is not currently available. Please check back later.')
         }
 
-        // Check access: admins are free, others need subscription or purchase
+        // Check access: admins can always view, others need subscription or purchase
         let hasEventAccess = isAdmin
 
         if (!hasEventAccess && eventData.subscription_required) {
