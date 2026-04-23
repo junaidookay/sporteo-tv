@@ -4,11 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { VideoPlayer } from '@/components/video-player'
-import CloudflareVideoPlayer from '@/components/cloudflare-video-player'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
-import { getEventById, getStreamAccess } from '@/lib/db-client'
-import { getHLSPlaybackUrl, getStreamStats } from '@/lib/bunny'
 
 export default function WatchPage() {
   const params = useParams()
@@ -17,11 +14,9 @@ export default function WatchPage() {
 
   const [event, setEvent] = useState<any>(null)
   const [streamUrl, setStreamUrl] = useState<string>('')
-  const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
-  const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [hasAccess, setHasAccess] = useState(false)
 
   useEffect(() => {
@@ -39,16 +34,18 @@ export default function WatchPage() {
           .from('events')
           .select('*')
           .eq('id', eventId)
+          .maybeSingle()
 
         if (eventError) {
           console.error('[v0] Database error:', eventError)
           throw new Error('Failed to load event details')
         }
 
-        const eventData = eventsData?.[0]
-        if (!eventData) {
+        if (!eventsData) {
           throw new Error('Event not found')
         }
+
+        const eventData = eventsData
 
         // Check if stream is publicly visible or completed (admins can always view)
         const isAdmin = user.user_metadata?.role === 'admin'
@@ -58,28 +55,26 @@ export default function WatchPage() {
 
         // Check access: admins are free, others need subscription or purchase
         let hasEventAccess = isAdmin
-        
+
         if (!hasEventAccess && eventData.subscription_required) {
-          // Check if user has active subscription
           const { data: subscription } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', user.id)
             .eq('status', 'active')
             .maybeSingle()
-          
+
           hasEventAccess = !!subscription
         }
 
         if (!hasEventAccess && eventData.ticket_price_cents && eventData.ticket_price_cents > 0) {
-          // Check if user has purchased this event
           const { data: purchase } = await supabase
             .from('purchases')
             .select('*')
             .eq('user_id', user.id)
             .eq('event_id', eventId)
             .maybeSingle()
-          
+
           hasEventAccess = !!purchase
         }
 
@@ -88,70 +83,35 @@ export default function WatchPage() {
         }
 
         setEvent(eventData)
-
-        // Track viewing history for paid users and admins
-        if (hasEventAccess && eventData.ticket_price_cents > 0) {
-          fetch('/api/viewing-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ eventId }),
-          }).catch(err => console.error('Failed to track history:', err))
-        }
-
-        // Generate unique device ID for this browser
-        let deviceId = localStorage.getItem('deviceId')
-        if (!deviceId) {
-          deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-          localStorage.setItem('deviceId', deviceId)
-        }
-
-        // Create a stream session token (enforces one active device per user)
-        const sessionResponse = await fetch('/api/stream-sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId, deviceId }),
-        })
-
-        if (!sessionResponse.ok) {
-          const data = await sessionResponse.json()
-          throw new Error(data.error || 'Failed to start stream session')
-        }
-
-        const { session } = await sessionResponse.json()
-        setSessionToken(session.session_token)
         setHasAccess(true)
 
-        // Generate stream URL with session token
-        let streamUrl = ''
-        if (eventData.cloudflare_stream_id) {
-          // Use Cloudflare Stream via API
+        // Generate stream URL
+        let url = ''
+        if (eventData.cloudflare_live_input_id && eventData.cloudflare_customer_subdomain) {
+          // Use Cloudflare native iframe for live streams
+          url = `https://customer-${eventData.cloudflare_customer_subdomain}.cloudflarestream.com/${eventData.cloudflare_live_input_id}/iframe`
+        } else if (eventData.cloudflare_stream_id) {
+          // Use signed URL for VOD
           try {
             const response = await fetch('/api/cloudflare/signed-url', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 videoId: eventData.cloudflare_stream_id,
-                sessionToken: session.session_token,
                 expiresIn: 3600,
               }),
             })
             if (response.ok) {
               const data = await response.json()
-              streamUrl = data.signedUrl
-            } else {
-              console.error('Failed to get Cloudflare signed URL')
+              url = data.signedUrl || data.url
             }
           } catch (err) {
-            console.error('Error getting Cloudflare signed URL:', err)
+            console.error('Error getting Cloudflare URL:', err)
           }
+        } else if (eventData.bunny_stream_id) {
+          url = `https://${eventData.bunny_cdn_hostname || 'bunkmcdm.b-cdn.net'}/${eventData.bunny_stream_id}/playlist.m3u8`
         }
-        if (!streamUrl && eventData.bunny_stream_id) {
-          // Fallback to Bunny.net
-          streamUrl = getHLSPlaybackUrl(eventData.bunny_stream_id)
-          const streamStats = await getStreamStats(eventData.bunny_stream_id)
-          setStats(streamStats)
-        }
-        setStreamUrl(streamUrl)
+        setStreamUrl(url)
       } catch (err) {
         console.error('Failed to load stream:', err)
         setError(err instanceof Error ? err.message : 'Failed to load stream')
@@ -162,15 +122,6 @@ export default function WatchPage() {
     }
 
     loadStreamData()
-
-    // Poll for stats updates every 10 seconds if stream is live
-    const interval = setInterval(() => {
-      if (event?.bunny_stream_id && event?.status === 'live') {
-        getStreamStats(event.bunny_stream_id).then(setStats)
-      }
-    }, 10000)
-
-    return () => clearInterval(interval)
   }, [eventId])
 
   if (loading) {
@@ -215,14 +166,16 @@ export default function WatchPage() {
           {/* Main Video Player */}
           <div className="lg:col-span-2">
             {streamUrl ? (
-              event.cloudflare_stream_id ? (
-                <CloudflareVideoPlayer
-                  videoId={event.cloudflare_stream_id}
-                  signedUrl={streamUrl}
-                  title={event.title}
-                  isLive={event.is_live}
-                  poster={event.featured_image}
-                />
+              event.cloudflare_live_input_id ? (
+                <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+                  <iframe
+                    src={streamUrl}
+                    style={{ border: 'none', position: 'absolute', top: 0, left: 0, height: '100%', width: '100%' }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    title="Live Stream"
+                  />
+                </div>
               ) : (
                 <VideoPlayer
                   src={streamUrl}
@@ -256,7 +209,7 @@ export default function WatchPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-border">
                 <div>
                   <p className="text-sm text-muted-foreground">Event Type</p>
-                  <p className="font-bold uppercase">{event.event_type}</p>
+                  <p className="font-bold uppercase">{event.event_type || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
@@ -271,7 +224,7 @@ export default function WatchPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Start Time</p>
                   <p className="font-bold text-sm">
-                    {new Date(event.start_time).toLocaleString()}
+                    {event.start_time ? new Date(event.start_time).toLocaleString() : 'TBA'}
                   </p>
                 </div>
               </div>
@@ -280,36 +233,36 @@ export default function WatchPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            {/* Stream Stats */}
-            {stats && (
+            {event.ticket_price_cents > 0 && (
               <Card className="p-6 mb-6 border-border">
-                <h3 className="text-lg font-black mb-4">STREAM STATS</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Viewers</p>
-                    <p className="text-2xl font-black text-primary">{stats.viewerCount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Quality</p>
-                    <p className="font-bold">{stats.resolution}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <p className={`font-bold ${stats.isHealthy ? 'text-primary' : 'text-destructive'}`}>
-                      {stats.isHealthy ? '✓ Healthy' : '✗ Offline'}
-                    </p>
-                  </div>
-                </div>
+                <h3 className="text-lg font-black mb-2">PURCHASE INFO</h3>
+                <p className="text-sm text-muted-foreground mb-2">You have purchased access to this event.</p>
+                <p className="text-xs text-muted-foreground">
+                  Transaction ID: {event.id.slice(0, 8)}...
+                </p>
               </Card>
             )}
 
-            {/* Chat Placeholder */}
-            <Card className="p-6 border-border h-96 flex flex-col">
-              <h3 className="text-lg font-black mb-4">LIVE CHAT</h3>
-              <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
+            <Card className="p-6 border-border">
+              <h3 className="text-lg font-black mb-4">EVENT DETAILS</h3>
+              <div className="space-y-4">
+                {event.duration && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Duration</p>
+                    <p className="font-bold">{event.duration}</p>
+                  </div>
+                )}
+                {event.category && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Category</p>
+                    <p className="font-bold">{event.category}</p>
+                  </div>
+                )}
                 <div>
-                  <p className="mb-2">💬 Chat coming soon</p>
-                  <p className="text-sm">Interact with other viewers in real time</p>
+                  <p className="text-sm text-muted-foreground">Access Type</p>
+                  <p className="font-bold">
+                    {event.subscription_required ? 'Subscription' : event.ticket_price_cents > 0 ? 'Pay-Per-View' : 'Free'}
+                  </p>
                 </div>
               </div>
             </Card>
