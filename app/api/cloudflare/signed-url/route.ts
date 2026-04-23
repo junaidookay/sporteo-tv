@@ -28,7 +28,9 @@ async function getCloudflareSettings() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { videoId, sessionToken, expiresIn = 14400, isLive = false } = await request.json()
+    const { videoId, expiresIn = 14400, isLive = false } = await request.json()
+
+    console.log('[signed-url] Request received:', { videoId, expiresIn, isLive })
 
     if (!videoId) {
       return NextResponse.json({ error: 'Video ID is required' }, { status: 400 })
@@ -37,6 +39,8 @@ export async function POST(request: NextRequest) {
     const cloudflare = await getCloudflareSettings()
     const accountId = cloudflare.accountId
     const apiToken = cloudflare.apiToken
+
+    console.log('[signed-url] Cloudflare settings:', { accountId: !!accountId, apiToken: !!apiToken })
 
     if (!accountId || !apiToken) {
       return NextResponse.json(
@@ -51,6 +55,8 @@ export async function POST(request: NextRequest) {
       ? `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}/token`
       : `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
 
+    console.log('[signed-url] Calling Cloudflare API:', tokenUrl)
+
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
@@ -62,16 +68,33 @@ export async function POST(request: NextRequest) {
       }),
     })
 
+    const responseText = await response.text()
+    console.log('[signed-url] Cloudflare response status:', response.status)
+    console.log('[signed-url] Cloudflare response body:', responseText)
+
     if (!response.ok) {
-      const error = await response.json()
-      console.error('Cloudflare token error:', error)
+      let errorData
+      try {
+        errorData = JSON.parse(responseText)
+      } catch {
+        errorData = { message: responseText }
+      }
+      console.error('[signed-url] Cloudflare error:', errorData)
       return NextResponse.json(
-        { error: error.errors?.[0]?.message || 'Failed to generate token' },
+        { error: errorData.errors?.[0]?.message || errorData.message || 'Failed to generate token' },
         { status: response.status }
       )
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid response from Cloudflare' },
+        { status: 500 }
+      )
+    }
 
     // Return the token to use in the player URL
     // Format: https://customer-{subdomain}.cloudflarestream.com/{token}/iframe
@@ -80,9 +103,9 @@ export async function POST(request: NextRequest) {
       expiresIn,
     })
   } catch (error) {
-    console.error('Error generating signed URL:', error)
+    console.error('[signed-url] Error:', error)
     return NextResponse.json(
-      { error: 'Failed to generate signed URL' },
+      { error: 'Failed to generate signed URL: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     )
   }
