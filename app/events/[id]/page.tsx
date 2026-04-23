@@ -266,7 +266,10 @@ export default function EventDetailPage() {
                     <p className="text-sm text-primary font-bold">✓ You have access to this event</p>
                   </div>
                   {isLive && (
-                    <Button className="w-full bg-red-600 text-white hover:bg-red-700">
+                    <Button 
+                      onClick={() => router.push(`/watch/${eventId}`)}
+                      className="w-full bg-red-600 text-white hover:bg-red-700"
+                    >
                       Watch Live
                     </Button>
                   )}
@@ -301,7 +304,10 @@ export default function EventDetailPage() {
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground mb-4">This event is free to watch</p>
                   {isLive ? (
-                    <Button className="w-full bg-red-600 text-white hover:bg-red-700">
+                    <Button 
+                      onClick={() => router.push(`/watch/${eventId}`)}
+                      className="w-full bg-red-600 text-white hover:bg-red-700"
+                    >
                       Watch Live
                     </Button>
                   ) : (
