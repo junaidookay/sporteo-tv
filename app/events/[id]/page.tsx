@@ -274,7 +274,10 @@ export default function EventDetailPage() {
                     </Button>
                   )}
                   {event.status === 'completed' && (
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button 
+                      onClick={() => router.push(`/watch/${eventId}`)}
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
                       Watch Replay
                     </Button>
                   )}
