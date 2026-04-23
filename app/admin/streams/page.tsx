@@ -20,6 +20,7 @@ export default function StreamsPage() {
   const [cloudflareConfig, setCloudflareConfig] = useState<any>(null)
   const [creatingLiveInput, setCreatingLiveInput] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [previewTokens, setPreviewTokens] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -67,6 +68,41 @@ export default function StreamsPage() {
 
     checkAuth()
   }, [])
+
+  const fetchPreviewToken = async (liveInputId: string) => {
+    if (previewTokens[liveInputId]) return previewTokens[liveInputId]
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) return null
+
+      const response = await fetch('/api/cloudflare/signed-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          videoId: liveInputId,
+          expiresIn: 14400,
+          isLive: true,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.token) {
+          setPreviewTokens(prev => ({ ...prev, [liveInputId]: data.token }))
+          return data.token
+        }
+      }
+    } catch (err) {
+      console.error('Failed to get preview token:', err)
+    }
+    return null
+  }
 
   const handleGenerateLiveInput = async (eventId: string) => {
     setCreatingLiveInput(true)
@@ -263,12 +299,24 @@ export default function StreamsPage() {
 
                     {event.cloudflare_live_input_id && event.cloudflare_customer_subdomain && (
                       <div className="mb-6 bg-black rounded-lg overflow-hidden aspect-video border border-border">
-                        <iframe
-                          src={`https://customer-${event.cloudflare_customer_subdomain}.cloudflarestream.com/${event.cloudflare_live_input_id}/iframe`}
-                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                          allowFullScreen
-                          className="w-full h-full"
-                        />
+                        {previewTokens[event.cloudflare_live_input_id] ? (
+                          <iframe
+                            src={`https://customer-${event.cloudflare_customer_subdomain}.cloudflarestream.com/${previewTokens[event.cloudflare_live_input_id]}/iframe`}
+                            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                            allowFullScreen
+                            className="w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Button
+                              onClick={async () => await fetchPreviewToken(event.cloudflare_live_input_id)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Load Preview
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                     {event.cloudflare_live_input_id && !event.cloudflare_customer_subdomain && (
