@@ -6,7 +6,7 @@ import { AdminSidebar } from '@/components/admin-sidebar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { getAllPurchases, getAllSubscriptions } from '@/lib/db'
+import { getAllPurchases, getAllSubscriptions } from '@/lib/db-client'
 
 export default function AdminTransactionsPage() {
   const router = useRouter()

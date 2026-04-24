@@ -398,3 +398,32 @@ export async function updatePlatformSetting(
   if (error) throw error
   return data
 }
+
+// Admin functions for transactions
+export async function getAllPurchases(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from('purchases')
+    .select(`
+      *,
+      profiles:user_id(id, display_name, email),
+      events:event_id(id, title)
+    `)
+    .order('purchase_date', { ascending: false })
+
+  if (error) throw error
+  return data as any[]
+}
+
+export async function getAllSubscriptions(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select(`
+      *,
+      profiles:user_id(id, display_name, email)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as any[]
+}
+}
