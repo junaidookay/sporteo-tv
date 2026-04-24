@@ -299,7 +299,11 @@ export async function getAllPurchases() {
 
   const { data, error } = await supabase
     .from('purchases')
-    .select('*')
+    .select(`
+      *,
+      profiles:user_id(id, display_name, email),
+      events:event_id(id, title)
+    `)
     .order('purchase_date', { ascending: false })
 
   if (error) throw error
@@ -311,7 +315,10 @@ export async function getAllSubscriptions() {
 
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('*')
+    .select(`
+      *,
+      profiles:user_id(id, display_name, email)
+    `)
     .order('created_at', { ascending: false })
 
   if (error) throw error
