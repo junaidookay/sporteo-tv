@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     console.log('[signed-url] Calling Cloudflare API:', tokenUrl)
     console.log('[signed-url] isLive:', isLiveInput, 'videoId:', videoId)
 
-    const response = await fetch(tokenUrl, {
+    let response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiToken}`,
@@ -85,6 +85,24 @@ export async function POST(request: NextRequest) {
 
     const responseText = await response.text()
     console.log('[signed-url] Cloudflare response status:', response.status)
+
+    // If live input endpoint returns 404, it might be a recording - try regular video endpoint
+    if (!response.ok && isLiveInput) {
+      console.log('[signed-url] Live input endpoint failed, trying regular video endpoint...')
+      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
+      
+      response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exp: Math.floor(Date.now() / 1000) + expiresIn,
+        }),
+      })
+    }
+
     console.log('[signed-url] Cloudflare response body:', responseText)
 
     if (!response.ok) {
