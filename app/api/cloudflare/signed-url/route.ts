@@ -58,12 +58,19 @@ export async function POST(request: NextRequest) {
     // Use /token endpoint for VOD or live inputs with signed URLs
     // For live inputs: /accounts/{id}/stream/live_inputs/{input_id}/token
     // For videos (recordings): /accounts/{id}/stream/{video_id}/token
-    const tokenUrl = isLiveInput
-      ? `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}/token`
-      : `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
+    
+    // First, try to call the token endpoint
+    let tokenUrl
+    if (isLiveInput && videoId.includes('-')) {
+      // This looks like a UUID for a live input
+      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}/token`
+    } else {
+      // Regular video
+      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
+    }
 
     console.log('[signed-url] Calling Cloudflare API:', tokenUrl)
-    console.log('[signed-url] isLive:', isLive, 'videoId:', videoId)
+    console.log('[signed-url] isLive:', isLiveInput, 'videoId:', videoId)
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
@@ -80,6 +87,34 @@ export async function POST(request: NextRequest) {
     console.log('[signed-url] Cloudflare response status:', response.status)
     console.log('[signed-url] Cloudflare response body:', responseText)
 
+    // Check if 404 - might need to enable signed URLs on the input
+    if (response.status === 404 && isLiveInput) {
+      // Try to get the live input first and check if signed URLs are enabled
+      const getInputUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}`
+      const inputResponse = await fetch(getInputUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+        },
+      })
+      
+      if (inputResponse.ok) {
+        const inputData = JSON.parse(await inputResponse.text())
+        console.log('[signed-url] Live input data:', inputData)
+        
+        // Check if requireSignedURLs is enabled
+        if (inputData.result?.recording?.requireSignedURLs) {
+          console.log('[signed-url] Signed URLs are enabled, trying token again')
+        } else {
+          console.log('[signed-url] Signed URLs NOT enabled - need to update live input')
+          return NextResponse.json({
+            error: 'Signed URLs not enabled for this live input. Please generate a new stream key.',
+            needsUpdate: true
+          }, { status: 403 })
+        }
+      }
+    }
+
     if (!response.ok) {
       let errorData
       try {
@@ -94,9 +129,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let data
+    let tokenData
     try {
-      data = JSON.parse(responseText)
+      tokenData = JSON.parse(responseText)
     } catch {
       return NextResponse.json(
         { error: 'Invalid response from Cloudflare' },
@@ -104,10 +139,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Cloudflare returns the token in different formats
+    // For live inputs: token is in result.result
+    // For videos: token is in result
+    const token = tokenData.result?.result || tokenData.result?.token || tokenData.result
+
+    if (!token) {
+      console.error('[signed-url] No token in response:', tokenData)
+      return NextResponse.json(
+        { error: 'No token returned from Cloudflare' },
+        { status: 500 }
+      )
+    }
+
     // Return the token to use in the player URL
     // Format: https://customer-{subdomain}.cloudflarestream.com/{token}/iframe
     return NextResponse.json({
-      token: data.result,
+      token: token,
       expiresIn,
     })
   } catch (error) {
