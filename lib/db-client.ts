@@ -426,4 +426,3 @@ export async function getAllSubscriptions(supabase: SupabaseClient) {
   if (error) throw error
   return data as any[]
 }
-}
