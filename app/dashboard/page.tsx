@@ -28,6 +28,8 @@ export default function DashboardPage() {
         // Use getSession() instead of getUser() for more reliable client-side auth check
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
+        let currentUser = null
+
         if (sessionError || !session?.user) {
           // Try getUser() as fallback
           const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -35,24 +37,26 @@ export default function DashboardPage() {
             router.push('/auth/login')
             return
           }
-          setUser(user)
+          currentUser = user
         } else {
-          setUser(session.user)
+          currentUser = session.user
         }
 
+        setUser(currentUser)
+
         // Load profile
-        const profileData = await getProfile(supabase, user.id)
+        const profileData = await getProfile(supabase, currentUser.id)
         setProfile(profileData)
 
         // Load subscription
-        const subData = await getUserSubscription(supabase, user.id)
+        const subData = await getUserSubscription(supabase, currentUser.id)
         setSubscription(subData)
 
         // Load purchases
         const { data: purchaseData, error: purchaseError } = await supabase
           .from('purchases')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', currentUser.id)
           .order('created_at', { ascending: false })
 
         if (!purchaseError && purchaseData) {
