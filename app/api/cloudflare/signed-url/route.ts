@@ -55,45 +55,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let targetVideoId = videoId
-
-    if (isLiveInput) {
-      // For live inputs: fetch the live input details to find the actual video ID
-      console.log('[signed-url] Fetching live input details for:', videoId)
-      
-      const liveInputRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}`,
-        { headers: { Authorization: `Bearer ${apiToken}` } }
-      )
-      
-      if (!liveInputRes.ok) {
-        console.error('[signed-url] Failed to get live input details:', await liveInputRes.text())
-        return NextResponse.json(
-          { error: 'Failed to get live input details' },
-          { status: liveInputRes.status }
-        )
-      }
-      
-      const liveInputData = await liveInputRes.json()
-      
-      // Get video ID from currentPlayback (for live) or lastRecording (for replay)
-      targetVideoId = liveInputData.result?.status?.currentPlayback?.videoID || 
-                      liveInputData.result?.recording?.lastRecordingID
-
-      if (!targetVideoId) {
-        console.error('[signed-url] No video ID found in live input:', liveInputData)
-        return NextResponse.json(
-          { error: 'No active recording found. Is the stream live?' },
-          { status: 404 }
-        )
-      }
-      
-      console.log('[signed-url] Found video ID from live input:', targetVideoId)
-    }
-
-    // Use regular /stream/{videoId}/token endpoint (works for both live recordings and VOD)
-    const tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${targetVideoId}/token`
+    // The /token endpoint accepts both video IDs and live input IDs directly
+    // For live inputs: requireSignedURLs on the input takes effect
+    // For videos: requireSignedURLs on the video takes effect
+    const tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
     console.log('[signed-url] Calling Cloudflare token API:', tokenUrl)
+    console.log('[signed-url] isLive:', isLiveInput, 'videoId:', videoId)
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
