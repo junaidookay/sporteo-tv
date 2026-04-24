@@ -25,14 +25,20 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        // Use getSession() instead of getUser() for more reliable client-side auth check
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        if (authError || !user) {
-          router.push('/auth/login')
-          return
+        if (sessionError || !session?.user) {
+          // Try getUser() as fallback
+          const { data: { user }, error: userError } = await supabase.auth.getUser()
+          if (userError || !user) {
+            router.push('/auth/login')
+            return
+          }
+          setUser(user)
+        } else {
+          setUser(session.user)
         }
-
-        setUser(user)
 
         // Load profile
         const profileData = await getProfile(supabase, user.id)
