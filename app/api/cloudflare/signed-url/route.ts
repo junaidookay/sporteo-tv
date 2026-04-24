@@ -55,54 +55,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use /token endpoint for VOD or live inputs with signed URLs
-    // For live inputs: /accounts/{id}/stream/live_inputs/{input_id}/token  
-    // For videos (recordings): /accounts/{id}/stream/{video_id}/token
-    // IMPORTANT: Token is returned in result.token from Cloudflare
-    
-    let tokenUrl
+    let targetVideoId = videoId
+
     if (isLiveInput) {
-      // For live inputs with signed URLs
-      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}/token`
-    } else {
-      // For regular videos
-      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
+      // For live inputs: fetch the live input details to find the actual video ID
+      console.log('[signed-url] Fetching live input details for:', videoId)
+      
+      const liveInputRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}`,
+        { headers: { Authorization: `Bearer ${apiToken}` } }
+      )
+      
+      if (!liveInputRes.ok) {
+        console.error('[signed-url] Failed to get live input details:', await liveInputRes.text())
+        return NextResponse.json(
+          { error: 'Failed to get live input details' },
+          { status: liveInputRes.status }
+        )
+      }
+      
+      const liveInputData = await liveInputRes.json()
+      
+      // Get video ID from currentPlayback (for live) or lastRecording (for replay)
+      targetVideoId = liveInputData.result?.status?.currentPlayback?.videoID || 
+                      liveInputData.result?.recording?.lastRecordingID
+
+      if (!targetVideoId) {
+        console.error('[signed-url] No video ID found in live input:', liveInputData)
+        return NextResponse.json(
+          { error: 'No active recording found. Is the stream live?' },
+          { status: 404 }
+        )
+      }
+      
+      console.log('[signed-url] Found video ID from live input:', targetVideoId)
     }
 
-    console.log('[signed-url] Calling Cloudflare API:', tokenUrl)
-    console.log('[signed-url] isLive:', isLiveInput, 'videoId:', videoId)
+    // Use regular /stream/{videoId}/token endpoint (works for both live recordings and VOD)
+    const tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${targetVideoId}/token`
+    console.log('[signed-url] Calling Cloudflare token API:', tokenUrl)
 
-    let response = await fetch(tokenUrl, {
+    const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        exp: Math.floor(Date.now() / 1000) + expiresIn, // Default 4 hours
+        exp: Math.floor(Date.now() / 1000) + expiresIn,
       }),
     })
 
     const responseText = await response.text()
     console.log('[signed-url] Cloudflare response status:', response.status)
-
-    // If live input endpoint returns 404, it might be a recording - try regular video endpoint
-    if (!response.ok && isLiveInput) {
-      console.log('[signed-url] Live input endpoint failed, trying regular video endpoint...')
-      tokenUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
-      
-      response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          exp: Math.floor(Date.now() / 1000) + expiresIn,
-        }),
-      })
-    }
-
     console.log('[signed-url] Cloudflare response body:', responseText)
 
     if (!response.ok) {
