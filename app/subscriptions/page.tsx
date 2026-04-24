@@ -43,11 +43,27 @@ export default function SubscriptionsPage() {
     if (!confirm('Are you sure you want to cancel your subscription?')) return
 
     try {
-      await supabase
-        .from('subscriptions')
-        .update({ status: 'cancelled' })
-        .eq('id', subscription.id)
-      
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch('/api/subscriptions/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to cancel subscription')
+      }
+
       setSubscription({ ...subscription, status: 'cancelled' })
       alert('Subscription cancelled. You will retain access until the end of your billing period.')
     } catch (error) {
