@@ -5,15 +5,13 @@ async function getCloudflareSettings(supabase: any) {
   const { data: rows, error } = await supabase
     .from('platform_settings')
     .select('key, value')
+    .in('key', ['cloudflare_account_id', 'cloudflare_api_token'])
 
   if (error || !rows) {
     throw new Error('Failed to load settings')
   }
 
-  const settings: Record<string, string> = {}
-  for (const row of rows) {
-    settings[row.key] = row.value
-  }
+  const settings = Object.fromEntries(rows.map((r: any) => [r.key, r.value]))
 
   return {
     accountId: settings.cloudflare_account_id || '',
@@ -35,7 +33,10 @@ export async function POST(request: NextRequest) {
 
     const { videoId, expiresIn = 14400, isLive = false } = await request.json()
 
-    console.log('[signed-url] Request received:', { videoId, expiresIn, isLive, userId: user.id })
+    // Force isLive to be a boolean
+    const isLiveInput = isLive === true || isLive === 'true'
+
+    console.log('[signed-url] Request received:', { videoId, expiresIn, isLive: isLiveInput, userId: user.id })
 
     if (!videoId) {
       return NextResponse.json({ error: 'Video ID is required' }, { status: 400 })
@@ -55,12 +56,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Use /token endpoint for VOD or live inputs with signed URLs
-    // Note: /token endpoint does not support Live WebRTC
-    const tokenUrl = isLive
+    // For live inputs: /accounts/{id}/stream/live_inputs/{input_id}/token
+    // For videos (recordings): /accounts/{id}/stream/{video_id}/token
+    const tokenUrl = isLiveInput
       ? `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${videoId}/token`
       : `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoId}/token`
 
     console.log('[signed-url] Calling Cloudflare API:', tokenUrl)
+    console.log('[signed-url] isLive:', isLive, 'videoId:', videoId)
 
     const response = await fetch(tokenUrl, {
       method: 'POST',
