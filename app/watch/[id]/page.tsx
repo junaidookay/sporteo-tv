@@ -27,9 +27,11 @@ export default function WatchPage() {
     const loadStreamData = async () => {
       try {
         // Get user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          throw new Error('Not authenticated')
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          console.error('[watch] Auth error:', userError)
+          window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.pathname)
+          return
         }
         setUser(user)
 
