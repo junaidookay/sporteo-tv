@@ -19,6 +19,15 @@ export async function POST(request: Request) {
                        'unknown'
       const userAgent = request.headers.get('user-agent') || 'unknown'
 
+      const { error: deactivateError } = await supabase
+        .from('user_sessions')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+
+      if (deactivateError) {
+        console.error('Failed to deactivate old sessions:', deactivateError)
+      }
+
       const { error: insertError } = await supabase
         .from('user_sessions')
         .insert({
@@ -33,16 +42,6 @@ export async function POST(request: Request) {
       if (insertError) {
         console.error('Failed to create session:', insertError)
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
-      }
-
-      const { error: deactivateError } = await supabase
-        .from('user_sessions')
-        .update({ is_active: false })
-        .eq('user_id', user.id)
-        .neq('device_id', device_id)
-
-      if (deactivateError) {
-        console.error('Failed to deactivate old sessions:', deactivateError)
       }
 
       const { data: activeSessions } = await supabase
