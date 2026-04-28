@@ -69,30 +69,36 @@ export default function Page() {
     const deviceId = getOrCreateDeviceId()
 
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       if (session?.user) {
-        const response = await fetch('/api/user-sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            action: 'validate',
-            device_id: deviceId
+        try {
+          const response = await fetch('/api/user-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              action: 'validate',
+              device_id: deviceId
+            })
           })
-        })
 
-        const data = await response.json()
+          if (!response.ok) {
+            await supabase.auth.signOut()
+            return
+          }
 
-        if (data.valid === false) {
+          const data = await response.json()
+
+          if (data.valid === false) {
+            await supabase.auth.signOut()
+            return
+          }
+
+          router.push('/dashboard')
+        } catch (e) {
           await supabase.auth.signOut()
-          router.push('/auth/login?reason=session_expired')
-          return false
         }
-
-        router.push('/dashboard')
-        return true
       }
-      return false
     }
 
     checkSession()
@@ -112,12 +118,19 @@ export default function Page() {
             device_id: deviceId
           })
         })
+        if (!response.ok) {
+          await supabase.auth.signOut()
+          router.push('/auth/login')
+          return
+        }
         const data = await response.json()
         if (data.valid === false) {
           await supabase.auth.signOut()
-          router.push('/auth/login?reason=session_expired')
+          router.push('/auth/login')
         }
-      } catch (e) {}
+      } catch (e) {
+        await supabase.auth.signOut()
+      }
     }
 
     const timeout = setTimeout(pollSession, 5000)
