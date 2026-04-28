@@ -118,10 +118,11 @@ export default function Page() {
       } catch (e) {}
     }
 
-    pollSession()
+    const timeout = setTimeout(pollSession, 5000)
     const interval = setInterval(pollSession, 5000)
 
     return () => {
+      clearTimeout(timeout)
       clearInterval(interval)
     }
   }, [])
