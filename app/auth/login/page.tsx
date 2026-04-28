@@ -66,12 +66,12 @@ export default function Page() {
   const supabase = createClient()
 
   useEffect(() => {
+    const deviceId = getOrCreateDeviceId()
+
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const deviceId = getOrCreateDeviceId()
-
-        await fetch('/api/user-sessions', {
+        const response = await fetch('/api/user-sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -80,10 +80,68 @@ export default function Page() {
           })
         })
 
+        const data = await response.json()
+
+        if (data.valid === false) {
+          await supabase.auth.signOut()
+          router.push('/auth/login?reason=session_expired')
+          return
+        }
+
         router.push('/dashboard')
       }
     }
     checkSession()
+  }, [])
+
+  useEffect(() => {
+    const deviceId = getOrCreateDeviceId()
+
+    let eventSource: EventSource | null = null
+
+    const connectSSE = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      eventSource = new EventSource('/api/user-sessions')
+
+      eventSource.addEventListener('force_logout', async (event) => {
+        const data = JSON.parse(event.data)
+        if (data.reason === 'new_login') {
+          await supabase.auth.signOut()
+          localStorage.removeItem('device_id')
+          router.push('/auth/login?reason=logged_out_by_other_device')
+        }
+      })
+
+      eventSource.onerror = () => {
+        eventSource?.close()
+        setTimeout(connectSSE, 5000)
+      }
+    }
+
+    connectSSE()
+
+    const heartbeatInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      try {
+        await fetch('/api/user-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'heartbeat',
+            device_id: deviceId
+          })
+        })
+      } catch (e) {}
+    }, 30000)
+
+    return () => {
+      eventSource?.close()
+      clearInterval(heartbeatInterval)
+    }
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {

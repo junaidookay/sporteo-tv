@@ -1,6 +1,80 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+const connectedClients = new Map<string, Set<ReadableStreamDefaultController>>()
+
+function broadcastToUser(userId: string, event: string, data: any) {
+  const clients = connectedClients.get(userId)
+  if (clients) {
+    const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+    clients.forEach(controller => {
+      try {
+        controller.enqueue(new TextEncoder().encode(message))
+      } catch (e) {
+        console.error('Failed to send to client:', e)
+      }
+    })
+  }
+}
+
+export async function GET(request: Request) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const userId = user.id
+
+  const stream = new ReadableStream({
+    start(controller) {
+      if (!connectedClients.has(userId)) {
+        connectedClients.set(userId, new Set())
+      }
+      connectedClients.get(userId)!.add(controller)
+
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(new TextEncoder().encode(': keepalive\n\n'))
+        } catch (e) {
+          clearInterval(keepAlive)
+        }
+      }, 30000)
+
+      const cleanup = () => {
+        clearInterval(keepAlive)
+        const clients = connectedClients.get(userId)
+        if (clients) {
+          clients.delete(controller)
+          if (clients.size === 0) {
+            connectedClients.delete(userId)
+          }
+        }
+      }
+
+      request.signal.addEventListener('abort', cleanup)
+    },
+    cancel() {
+      const clients = connectedClients.get(userId)
+      if (clients) {
+        clients.forEach(c => {
+          try { c.close() } catch (e) {}
+        })
+        connectedClients.delete(userId)
+      }
+    }
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  })
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -43,6 +117,8 @@ export async function POST(request: Request) {
         console.error('Failed to create session:', insertError)
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
       }
+
+      broadcastToUser(user.id, 'force_logout', { reason: 'new_login' })
 
       const { data: activeSessions } = await supabase
         .from('user_sessions')
@@ -126,29 +202,6 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-
-  } catch (error) {
-    console.error('Session API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function GET() {
-  try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: sessions } = await supabase
-      .from('user_sessions')
-      .select('id, device_id, device_name, created_at, last_active_at, ip_address, is_active')
-      .eq('user_id', user.id)
-      .order('last_active_at', { ascending: false })
-
-    return NextResponse.json({ sessions: sessions || [] })
 
   } catch (error) {
     console.error('Session API error:', error)

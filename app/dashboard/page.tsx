@@ -90,6 +90,37 @@ export default function DashboardPage() {
     loadDashboardData()
   }, [])
 
+  useEffect(() => {
+    let eventSource: EventSource | null = null
+
+    const connectSSE = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      eventSource = new EventSource('/api/user-sessions')
+
+      eventSource.addEventListener('force_logout', async (event) => {
+        const data = JSON.parse(event.data)
+        if (data.reason === 'new_login') {
+          await supabase.auth.signOut()
+          localStorage.removeItem('device_id')
+          router.push('/auth/login?reason=logged_out_by_other_device')
+        }
+      })
+
+      eventSource.onerror = () => {
+        eventSource?.close()
+        setTimeout(connectSSE, 5000)
+      }
+    }
+
+    connectSSE()
+
+    return () => {
+      eventSource?.close()
+    }
+  }, [])
+
   const handleCancelSubscription = async () => {
     if (!subscription || !confirm('Are you sure you want to cancel your subscription?')) return
 
