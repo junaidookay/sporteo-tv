@@ -74,6 +74,7 @@ export default function Page() {
         const response = await fetch('/api/user-sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             action: 'validate',
             device_id: deviceId
@@ -105,6 +106,7 @@ export default function Page() {
         const response = await fetch('/api/user-sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             action: 'validate',
             device_id: deviceId

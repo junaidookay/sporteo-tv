@@ -165,13 +165,18 @@ export async function POST(request: Request) {
     }
 
     if (action === 'validate') {
-      const { data: session } = await supabase
+      const { data: session, error: sessionError } = await supabase
         .from('user_sessions')
         .select('id, user_id, device_id, is_active, created_at')
         .eq('user_id', user.id)
         .eq('device_id', device_id)
         .eq('is_active', true)
-        .single()
+        .maybeSingle()
+
+      if (sessionError) {
+        console.error('Session query error:', sessionError)
+        return NextResponse.json({ valid: false, error: 'Session query failed' }, { status: 401 })
+      }
 
       if (!session) {
         return NextResponse.json({ valid: false, error: 'Session expired' }, { status: 401 })

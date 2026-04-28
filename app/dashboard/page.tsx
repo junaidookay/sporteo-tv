@@ -103,6 +103,12 @@ export default function DashboardPage() {
             device_id: deviceId
           })
         })
+
+        if (!response.ok) {
+          console.error('Session poll failed:', response.status)
+          return
+        }
+
         const data = await response.json()
         if (data.valid === false) {
           await supabase.auth.signOut()
