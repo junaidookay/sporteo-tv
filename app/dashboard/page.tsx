@@ -132,6 +132,7 @@ export default function DashboardPage() {
     if (typeof window === 'undefined') return
 
     let eventSource: EventSource | null = null
+    let reconnectTimeout: NodeJS.Timeout | null = null
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) return
 
@@ -140,6 +141,7 @@ export default function DashboardPage() {
 
       eventSource.addEventListener('force_logout', async (event) => {
         eventSource?.close()
+        if (reconnectTimeout) clearTimeout(reconnectTimeout)
         await supabase.auth.signOut()
         localStorage.removeItem('device_id')
         router.push('/auth/login?reason=session_expired')
@@ -148,6 +150,7 @@ export default function DashboardPage() {
       eventSource.onerror = () => {
         eventSource?.close()
         eventSource = null
+        reconnectTimeout = setTimeout(connectSSE, 3000)
       }
     }
 
@@ -155,6 +158,7 @@ export default function DashboardPage() {
 
     return () => {
       eventSource?.close()
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
     }
   }, [])
 
