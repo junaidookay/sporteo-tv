@@ -133,7 +133,7 @@ export default function DashboardPage() {
     }
 
     pollSession()
-    const interval = setInterval(pollSession, 3000)
+    const interval = setInterval(pollSession, 5000)
 
     return () => {
       clearInterval(interval)

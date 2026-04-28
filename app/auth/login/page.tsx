@@ -34,7 +34,7 @@ function getOrCreateDeviceId(): string {
       hash = ((hash << 5) - hash) + char
       hash = hash & hash
     }
-    deviceId = `device_${Math.abs(hash).toString(16)}_${Date.now()}`
+    deviceId = `device_${Math.abs(hash).toString(16)}`
     localStorage.setItem('device_id', deviceId)
   }
   return deviceId
