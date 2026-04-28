@@ -105,7 +105,11 @@ export default function DashboardPage() {
         })
 
         if (!response.ok) {
-          console.error('Session poll failed:', response.status)
+          if (response.status === 401) {
+            await supabase.auth.signOut()
+            localStorage.removeItem('device_id')
+            router.push('/auth/login?reason=session_expired')
+          }
           return
         }
 
