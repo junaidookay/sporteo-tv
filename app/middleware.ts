@@ -1,4 +1,5 @@
 import { updateSession } from '@/lib/supabase/proxy'
+import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -12,25 +13,45 @@ export async function middleware(request: NextRequest) {
 
     if (deviceId) {
       try {
-        const protocol = request.headers.get('x-forwarded-proto') || 'https'
-        const host = request.headers.get('host') || request.nextUrl.host
-        const baseUrl = `${protocol}://${host}`
+        const supabase = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() {
+                return response.cookies.getAll()
+              },
+              setAll(cookiesToSet) {
+                cookiesToSet.forEach(({ name, value, options }) => {
+                  response.cookies.set(name, value, options)
+                })
+              },
+            },
+          }
+        )
 
-        const sessionResponse = await fetch(`${baseUrl}/api/user-sessions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            action: 'validate',
-            device_id: deviceId
-          })
-        })
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        const sessionData = await sessionResponse.json()
+        if (authError || !user) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/auth/login'
+          url.searchParams.set('reason', 'session_expired')
+          return NextResponse.redirect(url)
+        }
 
-        if (sessionData.valid === false) {
+        const { data: session, error: sessionError } = await supabase
+          .from('user_sessions')
+          .select('id, user_id, device_id, is_active, created_at')
+          .eq('user_id', user.id)
+          .eq('device_id', deviceId)
+          .eq('is_active', true)
+          .maybeSingle()
+
+        if (sessionError) {
+          console.error('Session query error:', sessionError)
+        }
+
+        if (!session) {
           const url = request.nextUrl.clone()
           url.pathname = '/auth/login'
           url.searchParams.set('reason', 'session_expired')
