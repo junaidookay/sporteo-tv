@@ -82,12 +82,20 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
+    console.log('[user-sessions POST] Auth check:', { 
+      hasUser: !!user, 
+      authError: authError?.message,
+      userId: user?.id 
+    })
+
     if (authError || !user) {
+      console.log('[user-sessions POST] Unauthorized, authError:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { device_id, device_name, action } = body
+    console.log('[user-sessions POST] Action:', action, 'device_id:', device_id)
 
     if (action === 'login') {
       const clientIp = request.headers.get('x-forwarded-for') ||

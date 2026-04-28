@@ -164,10 +164,14 @@ export default function Page() {
 
       const data = await response.json()
 
-      if (data.success) {
-        document.cookie = `device_id=${deviceId}; path=/; max-age=86400; samesite=strict`
-        localStorage.setItem('device_id', deviceId)
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create session')
       }
+
+      document.cookie = `device_id=${deviceId}; path=/; max-age=86400; samesite=strict`
+      localStorage.setItem('device_id', deviceId)
+
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       router.push('/dashboard')
     } catch (error: unknown) {

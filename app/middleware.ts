@@ -11,9 +11,6 @@ export async function middleware(request: NextRequest) {
     const deviceId = request.cookies.get('device_id')?.value
 
     if (deviceId) {
-      const supabaseResponse = NextResponse.next({ request })
-      const cookieHeader = request.headers.get('cookie') || ''
-
       try {
         const protocol = request.headers.get('x-forwarded-proto') || 'https'
         const host = request.headers.get('host') || request.nextUrl.host
@@ -23,8 +20,8 @@ export async function middleware(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'cookie': cookieHeader
           },
+          credentials: 'include',
           body: JSON.stringify({
             action: 'validate',
             device_id: deviceId
