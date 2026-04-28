@@ -134,6 +134,8 @@ export default function Page() {
     setError(null)
 
     try {
+      await supabase.auth.signOut()
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -163,6 +165,7 @@ export default function Page() {
 
       if (data.success) {
         document.cookie = `device_id=${deviceId}; path=/; max-age=86400; samesite=strict`
+        localStorage.setItem('device_id', deviceId)
       }
 
       router.push('/dashboard')
