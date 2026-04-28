@@ -152,6 +152,7 @@ export default function Page() {
       const response = await fetch('/api/user-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           action: 'login',
           device_id: deviceId,

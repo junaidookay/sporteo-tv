@@ -40,25 +40,6 @@ export default function DashboardPage() {
           currentUser = session.user
         }
 
-        const deviceId = getDeviceId()
-        if (deviceId) {
-          const response = await fetch('/api/user-sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'validate',
-              device_id: deviceId
-            })
-          })
-          const data = await response.json()
-          if (data.valid === false) {
-            await supabase.auth.signOut()
-            localStorage.removeItem('device_id')
-            router.push('/auth/login?reason=session_expired')
-            return
-          }
-        }
-
         setUser(currentUser)
 
         // Load profile
@@ -116,6 +97,7 @@ export default function DashboardPage() {
         const response = await fetch('/api/user-sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             action: 'validate',
             device_id: deviceId
