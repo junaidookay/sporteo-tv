@@ -93,11 +93,11 @@ export default function DashboardPage() {
   useEffect(() => {
     let eventSource: EventSource | null = null
 
-    const connectSSE = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return
+    const connectSSE = () => {
+      const deviceId = getDeviceId()
+      if (!deviceId) return
 
-      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(getDeviceId() || '')}`)
+      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
 
       eventSource.addEventListener('force_logout', async (event) => {
         const data = JSON.parse(event.data)

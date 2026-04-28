@@ -85,24 +85,23 @@ export default function Page() {
         if (data.valid === false) {
           await supabase.auth.signOut()
           router.push('/auth/login?reason=session_expired')
-          return
+          return false
         }
 
         router.push('/dashboard')
+        return true
       }
+      return false
     }
+
     checkSession()
   }, [])
 
   useEffect(() => {
     const deviceId = getOrCreateDeviceId()
-
     let eventSource: EventSource | null = null
 
-    const connectSSE = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return
-
+    const connectSSE = () => {
       eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
 
       eventSource.addEventListener('force_logout', async (event) => {
@@ -122,25 +121,8 @@ export default function Page() {
 
     connectSSE()
 
-    const heartbeatInterval = setInterval(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return
-
-      try {
-        await fetch('/api/user-sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'heartbeat',
-            device_id: deviceId
-          })
-        })
-      } catch (e) {}
-    }, 30000)
-
     return () => {
       eventSource?.close()
-      clearInterval(heartbeatInterval)
     }
   }, [])
 
