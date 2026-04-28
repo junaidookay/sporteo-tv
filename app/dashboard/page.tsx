@@ -131,24 +131,30 @@ export default function DashboardPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    let eventSource: EventSource | null = null
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) return
 
-    const eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
+    const connectSSE = () => {
+      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId!)}`)
 
-    eventSource.addEventListener('force_logout', async (event) => {
-      eventSource.close()
-      await supabase.auth.signOut()
-      localStorage.removeItem('device_id')
-      router.push('/auth/login?reason=session_expired')
-    })
+      eventSource.addEventListener('force_logout', async (event) => {
+        eventSource?.close()
+        await supabase.auth.signOut()
+        localStorage.removeItem('device_id')
+        router.push('/auth/login?reason=session_expired')
+      })
 
-    eventSource.onerror = () => {
-      eventSource.close()
+      eventSource.onerror = () => {
+        eventSource?.close()
+        eventSource = null
+      }
     }
 
+    connectSSE()
+
     return () => {
-      eventSource.close()
+      eventSource?.close()
     }
   }, [])
 
