@@ -98,9 +98,11 @@ export async function POST(request: Request) {
     console.log('[user-sessions POST] Action:', action, 'device_id:', device_id)
 
     if (action === 'login') {
-      const clientIp = request.headers.get('x-forwarded-for') ||
-                       request.headers.get('x-real-ip') ||
-                       'unknown'
+      const forwardedFor = request.headers.get('x-forwarded-for')
+      let clientIp = request.headers.get('x-real-ip') || 'unknown'
+      if (forwardedFor) {
+        clientIp = forwardedFor.split(',')[0].trim()
+      }
       const userAgent = request.headers.get('user-agent') || 'unknown'
 
       const { error: deactivateError } = await supabase
