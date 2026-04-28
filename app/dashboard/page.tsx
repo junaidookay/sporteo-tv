@@ -128,6 +128,30 @@ export default function DashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const deviceId = localStorage.getItem('device_id')
+    if (!deviceId) return
+
+    const eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
+
+    eventSource.addEventListener('session_invalidated', async (event) => {
+      eventSource.close()
+      await supabase.auth.signOut()
+      localStorage.removeItem('device_id')
+      router.push('/auth/login?reason=session_expired')
+    })
+
+    eventSource.onerror = () => {
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [])
+
   const handleCancelSubscription = async () => {
     if (!subscription || !confirm('Are you sure you want to cancel your subscription?')) return
 
