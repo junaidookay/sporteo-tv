@@ -5,9 +5,11 @@ const connectedClients = new Map<string, Map<ReadableStreamDefaultController, st
 
 function broadcastToUser(userId: string, event: string, data: any, excludeDeviceId?: string) {
   const clients = connectedClients.get(userId)
+  console.log(`[broadcastToUser] userId: ${userId}, event: ${event}, excludeDeviceId: ${excludeDeviceId}, connected clients: ${clients?.size || 0}`)
   if (clients) {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
     clients.forEach((controller, deviceId) => {
+      console.log(`[broadcastToUser] checking client deviceId: ${deviceId}, excludeDeviceId: ${excludeDeviceId}, wouldExclude: ${deviceId === excludeDeviceId}`)
       if (deviceId === excludeDeviceId) return
       try {
         controller.enqueue(new TextEncoder().encode(message))
@@ -28,6 +30,7 @@ export async function GET(request: Request) {
 
   const userId = user.id
   const deviceId = new URL(request.url).searchParams.get('device_id')
+  console.log(`[SSE CONNECT] userId: ${userId}, deviceId: ${deviceId}`)
 
   const stream = new ReadableStream({
     start(controller) {
@@ -35,6 +38,7 @@ export async function GET(request: Request) {
         connectedClients.set(userId, new Map())
       }
       connectedClients.get(userId)!.set(controller, deviceId || 'unknown')
+      console.log(`[SSE CONNECTED] userId: ${userId}, deviceId: ${deviceId}, total clients: ${connectedClients.get(userId)!.size}`)
 
       const keepAlive = setInterval(() => {
         try {
@@ -49,6 +53,7 @@ export async function GET(request: Request) {
         const clients = connectedClients.get(userId)
         if (clients) {
           clients.delete(controller)
+          console.log(`[SSE DISCONNECTED] userId: ${userId}, deviceId: ${deviceId}, remaining clients: ${clients.size}`)
           if (clients.size === 0) {
             connectedClients.delete(userId)
           }
