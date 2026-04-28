@@ -117,6 +117,8 @@ export async function POST(request: Request) {
 
       if (deactivateError) {
         console.error('Failed to deactivate old sessions:', deactivateError)
+      } else {
+        console.log('[login] Deactivated old sessions for user:', user.id)
       }
 
       const { error: insertError } = await supabase
@@ -135,7 +137,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
       }
 
+      console.log('[login] Broadcasting force_logout to user:', user.id, 'excludeDeviceId:', device_id)
       broadcastToUser(user.id, 'force_logout', { reason: 'new_login' }, device_id)
+      console.log('[login] Broadcast complete')
 
       const { data: activeSessions } = await supabase
         .from('user_sessions')

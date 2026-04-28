@@ -151,9 +151,28 @@ export default function DashboardPage() {
         router.push('/auth/login?reason=session_expired')
       })
 
-      eventSource.onerror = () => {
+      eventSource.onerror = async () => {
         eventSource?.close()
         eventSource = null
+        const deviceId = localStorage.getItem('device_id')
+        if (deviceId) {
+          try {
+            const response = await fetch('/api/user-sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ action: 'validate', device_id: deviceId })
+            })
+            if (response.status === 401 || !response.ok) {
+              await supabase.auth.signOut()
+              localStorage.removeItem('device_id')
+              router.push('/auth/login?reason=session_expired')
+              return
+            }
+          } catch (e) {
+            console.error('Session check failed:', e)
+          }
+        }
         reconnectTimeout = setTimeout(connectSSE, 3000)
       }
     }
