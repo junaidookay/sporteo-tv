@@ -99,30 +99,30 @@ export default function Page() {
 
   useEffect(() => {
     const deviceId = getOrCreateDeviceId()
-    let eventSource: EventSource | null = null
 
-    const connectSSE = () => {
-      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
-
-      eventSource.addEventListener('force_logout', async (event) => {
-        const data = JSON.parse(event.data)
-        if (data.reason === 'new_login') {
+    const pollSession = async () => {
+      try {
+        const response = await fetch('/api/user-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'validate',
+            device_id: deviceId
+          })
+        })
+        const data = await response.json()
+        if (data.valid === false) {
           await supabase.auth.signOut()
-          localStorage.removeItem('device_id')
-          router.push('/auth/login?reason=logged_out_by_other_device')
+          router.push('/auth/login?reason=session_expired')
         }
-      })
-
-      eventSource.onerror = () => {
-        eventSource?.close()
-        setTimeout(connectSSE, 5000)
-      }
+      } catch (e) {}
     }
 
-    connectSSE()
+    pollSession()
+    const interval = setInterval(pollSession, 5000)
 
     return () => {
-      eventSource?.close()
+      clearInterval(interval)
     }
   }, [])
 

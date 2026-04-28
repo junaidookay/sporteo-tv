@@ -108,33 +108,35 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    let eventSource: EventSource | null = null
-
-    const connectSSE = () => {
+    const pollSession = async () => {
       const deviceId = getDeviceId()
       if (!deviceId) return
 
-      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
-
-      eventSource.addEventListener('force_logout', async (event) => {
-        const data = JSON.parse(event.data)
-        if (data.reason === 'new_login') {
+      try {
+        const response = await fetch('/api/user-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'validate',
+            device_id: deviceId
+          })
+        })
+        const data = await response.json()
+        if (data.valid === false) {
           await supabase.auth.signOut()
           localStorage.removeItem('device_id')
-          router.push('/auth/login?reason=logged_out_by_other_device')
+          router.push('/auth/login?reason=session_expired')
         }
-      })
-
-      eventSource.onerror = () => {
-        eventSource?.close()
-        setTimeout(connectSSE, 5000)
+      } catch (e) {
+        console.error('Session poll error:', e)
       }
     }
 
-    connectSSE()
+    pollSession()
+    const interval = setInterval(pollSession, 5000)
 
     return () => {
-      eventSource?.close()
+      clearInterval(interval)
     }
   }, [])
 
