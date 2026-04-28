@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
     const eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
 
-    eventSource.addEventListener('session_invalidated', async (event) => {
+    eventSource.addEventListener('force_logout', async (event) => {
       eventSource.close()
       await supabase.auth.signOut()
       localStorage.removeItem('device_id')
