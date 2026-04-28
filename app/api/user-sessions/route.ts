@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-const connectedClients = new Map<string, Set<ReadableStreamDefaultController>>()
+const connectedClients = new Map<string, Map<ReadableStreamDefaultController, string>>()
 
-function broadcastToUser(userId: string, event: string, data: any) {
+function broadcastToUser(userId: string, event: string, data: any, excludeDeviceId?: string) {
   const clients = connectedClients.get(userId)
   if (clients) {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-    clients.forEach(controller => {
+    clients.forEach((controller, deviceId) => {
+      if (deviceId === excludeDeviceId) return
       try {
         controller.enqueue(new TextEncoder().encode(message))
       } catch (e) {
@@ -26,13 +27,14 @@ export async function GET(request: Request) {
   }
 
   const userId = user.id
+  const deviceId = new URL(request.url).searchParams.get('device_id')
 
   const stream = new ReadableStream({
     start(controller) {
       if (!connectedClients.has(userId)) {
-        connectedClients.set(userId, new Set())
+        connectedClients.set(userId, new Map())
       }
-      connectedClients.get(userId)!.add(controller)
+      connectedClients.get(userId)!.set(controller, deviceId || 'unknown')
 
       const keepAlive = setInterval(() => {
         try {
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
     cancel() {
       const clients = connectedClients.get(userId)
       if (clients) {
-        clients.forEach(c => {
+        clients.forEach((_, c) => {
           try { c.close() } catch (e) {}
         })
         connectedClients.delete(userId)
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
       }
 
-      broadcastToUser(user.id, 'force_logout', { reason: 'new_login' })
+      broadcastToUser(user.id, 'force_logout', { reason: 'new_login' }, device_id)
 
       const { data: activeSessions } = await supabase
         .from('user_sessions')

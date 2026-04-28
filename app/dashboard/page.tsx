@@ -97,7 +97,7 @@ export default function DashboardPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
 
-      eventSource = new EventSource('/api/user-sessions')
+      eventSource = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(getDeviceId() || '')}`)
 
       eventSource.addEventListener('force_logout', async (event) => {
         const data = JSON.parse(event.data)
