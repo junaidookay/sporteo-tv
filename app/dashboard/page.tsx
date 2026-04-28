@@ -127,7 +127,25 @@ export default function DashboardPage() {
     }
   }
 
+  const getDeviceId = (): string | null => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('device_id')
+  }
+
   const handleLogout = async () => {
+    const deviceId = getDeviceId()
+
+    if (deviceId) {
+      await fetch('/api/user-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'logout',
+          device_id: deviceId
+        })
+      })
+    }
+
     await supabase.auth.signOut()
     router.push('/')
   }

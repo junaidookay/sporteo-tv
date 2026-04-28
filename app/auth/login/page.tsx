@@ -15,6 +15,48 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
+function getOrCreateDeviceId(): string {
+  if (typeof window === 'undefined') return ''
+
+  let deviceId = localStorage.getItem('device_id')
+  if (!deviceId) {
+    const browserInfo = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width,
+      screen.height,
+      new Date().getTimezoneOffset()
+    ].join('|')
+
+    let hash = 0
+    for (let i = 0; i < browserInfo.length; i++) {
+      const char = browserInfo.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash
+    }
+    deviceId = `device_${Math.abs(hash).toString(16)}_${Date.now()}`
+    localStorage.setItem('device_id', deviceId)
+  }
+  return deviceId
+}
+
+function getDeviceName(): string {
+  if (typeof window === 'undefined') return 'Unknown Device'
+
+  const ua = navigator.userAgent
+
+  if (/(tablet|ipad|playbook)|(android(?!.*mobi))/i.test(ua)) {
+    return 'Tablet'
+  }
+  if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    return 'Mobile Phone'
+  }
+  if (/(Win64|Win32|Macintosh|Mac OS X)/i.test(ua)) {
+    return 'Desktop Computer'
+  }
+  return 'Unknown Device'
+}
+
 export default function Page() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,11 +65,21 @@ export default function Page() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Check if already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
+        const deviceId = getOrCreateDeviceId()
+
+        await fetch('/api/user-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'validate',
+            device_id: deviceId
+          })
+        })
+
         router.push('/dashboard')
       }
     }
@@ -41,17 +93,38 @@ export default function Page() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
         options: {
-emailRedirectTo:
+          emailRedirectTo:
             process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
               `${window.location.origin}/dashboard`,
         },
       })
-      if (error) throw error
-      router.push('/protected')
+
+      if (signInError) throw signInError
+
+      const deviceId = getOrCreateDeviceId()
+      const deviceName = getDeviceName()
+
+      const response = await fetch('/api/user-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          device_id: deviceId,
+          device_name: deviceName
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        document.cookie = `device_id=${deviceId}; path=/; max-age=86400; samesite=strict`
+      }
+
+      router.push('/dashboard')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
