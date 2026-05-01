@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { SUBSCRIPTION_PLANS } from '@/lib/products'
+import { SUBSCRIPTION_PLANS, formatPrice } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SubscriptionsPage() {
@@ -135,7 +135,7 @@ export default function SubscriptionsPage() {
             <Card className="p-8 flex flex-col border-border hover:border-primary transition-all">
               <h3 className="text-3xl font-black mb-4">MONTHLY PASS</h3>
               <div className="mb-8">
-                <div className="text-5xl font-black text-primary">$9.99</div>
+                <div className="text-5xl font-black text-primary">{formatPrice(999)}</div>
                 <div className="text-muted-foreground mt-2">per month, cancel anytime</div>
               </div>
 
@@ -175,8 +175,8 @@ export default function SubscriptionsPage() {
               </div>
               <h3 className="text-3xl font-black mb-4 mt-2">ANNUAL PASS</h3>
               <div className="mb-8">
-                <div className="text-5xl font-black text-primary">$99.99</div>
-                <div className="text-muted-foreground mt-2">per year (save $19.88)</div>
+                <div className="text-5xl font-black text-primary">{formatPrice(9999)}</div>
+                <div className="text-muted-foreground mt-2">per year (save {formatPrice(1988)})</div>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
@@ -223,7 +223,7 @@ export default function SubscriptionsPage() {
             <div>
               <h3 className="text-xl font-bold mb-2">Do you offer a free trial?</h3>
               <p className="text-muted-foreground">
-                Not currently, but our monthly plan at $9.99 is affordable for trying out the service. You can cancel anytime if it is not for you.
+                Not currently, but our monthly plan at €9.99 is affordable for trying out the service. You can cancel anytime if it is not for you.
               </p>
             </div>
 

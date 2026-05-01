@@ -61,7 +61,7 @@ export async function startCheckoutSession(productId: string) {
       const billingPeriod = productId === 'sub_annual' ? 'year' : 'month'
       
       const price = await stripe.prices.create({
-        currency: 'usd',
+        currency: 'eur',
         unit_amount: product.priceInCents,
         recurring: {
           interval: billingPeriod,
@@ -82,7 +82,7 @@ export async function startCheckoutSession(productId: string) {
     } else {
       lineItems = [{
         price_data: {
-          currency: 'usd',
+          currency: 'eur',
           product_data: {
             name: product.name,
             description: product.description,

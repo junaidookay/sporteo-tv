@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import Checkout from '@/components/checkout'
-import { SUBSCRIPTION_PLANS } from '@/lib/products'
+import { SUBSCRIPTION_PLANS, formatPrice } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 import { getEventById } from '@/lib/db-client'
 
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
             {plan?.id === 'sub_annual' && (
               <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg">
                 <p className="text-sm font-bold text-primary">Save 17% vs Monthly</p>
-                <p className="text-xs text-primary/80 mt-1">That's $19.88 per year in savings</p>
+                <p className="text-xs text-primary/80 mt-1">That's {formatPrice(1988)} per year in savings</p>
               </div>
             )}
           </Card>

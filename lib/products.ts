@@ -37,5 +37,5 @@ export function isValidProduct(productId: string): boolean {
 
 // Helper to get price for display
 export function formatPrice(priceInCents: number): string {
-  return `$${(priceInCents / 100).toFixed(2)}`
+  return `€${(priceInCents / 100).toFixed(2)}`
 }
