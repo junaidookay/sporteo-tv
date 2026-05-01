@@ -94,7 +94,7 @@ export default function Page() {
             return
           }
 
-          router.push('/dashboard')
+          router.push('/')
         } catch (e) {
           await supabase.auth.signOut()
         }
@@ -186,7 +186,7 @@ export default function Page() {
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      router.push('/dashboard')
+      router.push('/')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
