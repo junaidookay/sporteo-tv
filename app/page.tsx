@@ -152,7 +152,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* Main Featured - Large */}
             <div className="lg:col-span-2 h-full">
-              <Link href={`/events/€{FEATURED_EVENTS[0].id}`}>
+              <Link href={`/events/${FEATURED_EVENTS[0].id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-all cursor-pointer group h-full">
                   <div className="relative h-96 lg:h-full min-h-[384px] overflow-hidden">
                     <img
@@ -178,7 +178,7 @@ export default function HomePage() {
             {/* Secondary Featured Items */}
             <div className="grid grid-rows-2 gap-4 h-full">
               {FEATURED_EVENTS.slice(1, 3).map((event) => (
-                <Link key={event.id} href={`/events/€{event.id}`}>
+                <Link key={event.id} href={`/events/${event.id}`}>
                   <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full">
                     <div className="relative h-full min-h-[128px] overflow-hidden">
                       <img
@@ -331,7 +331,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {FEATURED_CATEGORY.map((event) => (
-              <Link key={event.id} href={`/events/€{event.id}`}>
+              <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -373,7 +373,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {BASKETBALL_EVENTS.map((event) => (
-              <Link key={event.id} href={`/events/€{event.id}`}>
+              <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -415,7 +415,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TENNIS_EVENTS.map((event) => (
-              <Link key={event.id} href={`/events/€{event.id}`}>
+              <Link key={event.id} href={`/events/${event.id}`}>
                 <Card className="overflow-hidden hover:border-primary transition-colors cursor-pointer group h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden">
                     <img
