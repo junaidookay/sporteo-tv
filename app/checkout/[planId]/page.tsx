@@ -97,7 +97,7 @@ export default function CheckoutPage() {
 
             <div className="mb-8 pb-8 border-b border-border">
               <div className="text-5xl font-black text-primary mb-2">
-                ${plan ? (plan.priceInCents / 100).toFixed(2) : (event?.ticket_price_cents / 100).toFixed(2)}
+                €{plan ? (plan.priceInCents / 100).toFixed(2) : (event?.ticket_price_cents / 100).toFixed(2)}
               </div>
               <p className="text-muted-foreground">
                 {plan?.id === 'sub_monthly' ? 'per month' : plan?.id === 'sub_annual' ? 'per year' : 'one-time'}

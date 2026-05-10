@@ -345,7 +345,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Spent</p>
                   <p className="text-3xl font-black">
-                    ${(purchases.reduce((sum, p) => sum + p.amount_cents, 0) / 100).toFixed(2)}
+                    €{(purchases.reduce((sum, p) => sum + p.amount_cents, 0) / 100).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -457,7 +457,7 @@ export default function DashboardPage() {
                             {new Date(purchase.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 font-bold">
-                            ${(purchase.amount_cents / 100).toFixed(2)}
+                            €{(purchase.amount_cents / 100).toFixed(2)}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Price</p>
                       <p className="text-xl font-bold">
-                        ${subscription.subscription_type === 'monthly' ? '9.99' : '99.99'}/
+                        €{subscription.subscription_type === 'monthly' ? '9.99' : '99.99'}/
                         {subscription.subscription_type === 'monthly' ? 'month' : 'year'}
                       </p>
                     </div>

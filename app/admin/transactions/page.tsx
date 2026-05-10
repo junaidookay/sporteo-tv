@@ -75,7 +75,7 @@ export default function AdminTransactionsPage() {
   }
 
   const formatCurrency = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`
+    return `€${(cents / 100).toFixed(2)}`
   }
 
   const formatDate = (dateStr: string) => {
