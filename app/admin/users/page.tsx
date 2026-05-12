@@ -204,7 +204,7 @@ export default function UsersPage() {
                         <p className="font-bold">{u.purchaseCount}</p>
                       </td>
                       <td className="hidden lg:table-cell px-4 sm:px-6 py-4">
-                        <p className="font-bold">${(u.totalSpent / 100).toFixed(2)}</p>
+                        <p className="font-bold">€{(u.totalSpent / 100).toFixed(2)}</p>
                       </td>
                       <td className="px-4 sm:px-6 py-4">
                         <Button size="sm" variant="outline" className="border-border text-xs hover:bg-secondary">
