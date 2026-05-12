@@ -131,7 +131,7 @@ export default function AdminAnalyticsPage() {
             />
             <MetricCard
               title="Total Revenue"
-              value={`$${(stats.totalRevenue / 100).toFixed(2)}`}
+              value={`€${(stats.totalRevenue / 100).toFixed(2)}`}
               subtitle="From completed purchases"
             />
             <MetricCard

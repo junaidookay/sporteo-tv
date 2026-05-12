@@ -301,9 +301,9 @@ export default function AdminEventsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold mb-2">PPV Price ($)</label>
+                    <label className="block text-sm font-bold mb-2">PPV Price (€)</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">$</span>
+                      <span className="text-muted-foreground">€</span>
                       <input
                         type="number"
                         step="0.01"

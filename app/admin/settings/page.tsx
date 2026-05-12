@@ -251,7 +251,7 @@ export default function SettingsPage() {
                     <span className="text-muted-foreground">.00</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Current: ${(parseInt(settings.defaultPPVPrice) / 100).toFixed(2)}
+                    Current: €{(parseInt(settings.defaultPPVPrice) / 100).toFixed(2)}
                   </p>
                 </div>
 
@@ -270,7 +270,7 @@ export default function SettingsPage() {
                       <span className="text-muted-foreground">.00</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ${(parseInt(settings.monthlySubPrice) / 100).toFixed(2)}/mo
+                      €{(parseInt(settings.monthlySubPrice) / 100).toFixed(2)}/mo
                     </p>
                   </div>
 
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                       <span className="text-muted-foreground">.00</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ${(parseInt(settings.yearlySubPrice) / 100).toFixed(2)}/yr
+                      €{(parseInt(settings.yearlySubPrice) / 100).toFixed(2)}/yr
                     </p>
                   </div>
                 </div>
