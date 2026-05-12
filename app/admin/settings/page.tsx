@@ -240,7 +240,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-sm font-bold mb-2">Default PPV Price (cents)</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">$</span>
+                    <span className="text-muted-foreground">€</span>
                     <input
                       type="number"
                       name="defaultPPVPrice"
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Monthly Sub Price (cents)</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">$</span>
+                      <span className="text-muted-foreground">€</span>
                       <input
                         type="number"
                         name="monthlySubPrice"
