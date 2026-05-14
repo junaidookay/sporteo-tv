@@ -42,25 +42,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Cancel in Stripe
-    const stripeSubscription = await stripe.subscriptions.cancel(subscription.stripe_subscription_id)
+    let stripeStatus = 'cancelled'
+    try {
+      const stripeSubscription = await stripe.subscriptions.cancel(subscription.stripe_subscription_id)
+      stripeStatus = stripeSubscription.status === 'canceled' ? 'cancelled' : 'paused'
 
-    // Update in database - Stripe will send webhook to update status
-    // But we can also update immediately to reflect the change
-    await supabase
-      .from('subscriptions')
-      .update({ 
-        status: stripeSubscription.status === 'canceled' ? 'cancelled' : 'paused',
-        current_period_end: stripeSubscription.current_period_end 
-          ? new Date(stripeSubscription.current_period_end * 1000).toISOString()
-          : null
+      await supabase
+        .from('subscriptions')
+        .update({
+          status: stripeStatus,
+          current_period_end: stripeSubscription.current_period_end
+            ? new Date(stripeSubscription.current_period_end * 1000).toISOString()
+            : null
+        })
+        .eq('id', subscriptionId)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Subscription cancelled in Stripe',
+        status: stripeStatus
       })
-      .eq('id', subscriptionId)
+    } catch (stripeError: any) {
+      // If Stripe says subscription doesn't exist, cancel locally anyway
+      if (stripeError.code === 'resource_missing' || stripeError.message?.includes('No such subscription')) {
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'cancelled' })
+          .eq('id', subscriptionId)
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Subscription cancelled in Stripe',
-      status: stripeSubscription.status
-    })
+        return NextResponse.json({
+          success: true,
+          message: 'Subscription cancelled (already removed from Stripe)'
+        })
+      }
+      throw stripeError
+    }
   } catch (error) {
     console.error('Cancel subscription error:', error)
     return NextResponse.json(
