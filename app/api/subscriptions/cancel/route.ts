@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
       .from('subscriptions')
       .update({ 
         status: stripeSubscription.status === 'canceled' ? 'cancelled' : 'paused',
-        current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString()
+        current_period_end: stripeSubscription.current_period_end 
+          ? new Date(stripeSubscription.current_period_end * 1000).toISOString()
+          : null
       })
       .eq('id', subscriptionId)
 
