@@ -5,12 +5,17 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Mail, ArrowRight } from 'lucide-react'
+import { CheckCircle, Mail, ArrowRight, RefreshCw } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 function SignUpSuccessContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get('email')
   const [countdown, setCountdown] = useState(5)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  const supabase = createClient()
 
   useEffect(() => {
     if (countdown > 0) {
@@ -18,6 +23,37 @@ function SignUpSuccessContent() {
       return () => clearTimeout(timer)
     }
   }, [countdown])
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
+
+  const handleResendEmail = async () => {
+    if (!email || resendCooldown > 0) return
+
+    setResendStatus('sending')
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      })
+
+      if (error) {
+        console.error('Resend error:', error)
+        setResendStatus('error')
+      } else {
+        setResendStatus('sent')
+        setResendCooldown(60)
+        setTimeout(() => setResendStatus('idle'), 3000)
+      }
+    } catch (err) {
+      console.error('Resend error:', err)
+      setResendStatus('error')
+    }
+  }
 
   return (
     <Card className="max-w-md w-full p-8 text-center border-border">
@@ -59,8 +95,41 @@ function SignUpSuccessContent() {
         </p>
       )}
 
-      <div className="mt-6 pt-6 border-t border-border">
-        <Link href="/auth/login" className="text-sm text-primary hover:underline">
+      <div className="mt-6 pt-6 border-t border-border space-y-4">
+        <div className="text-sm text-muted-foreground">
+          Didn't receive the email? Check your spam folder or resend it.
+        </div>
+
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={handleResendEmail}
+          disabled={resendCooldown > 0 || resendStatus === 'sending'}
+        >
+          {resendStatus === 'sending' ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Sending...
+            </>
+          ) : resendStatus === 'sent' ? (
+            <>
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              Email Sent!
+            </>
+          ) : resendStatus === 'error' ? (
+            <>
+              <Mail className="w-4 h-4" />
+              Failed - Try Again
+            </>
+          ) : (
+            <>
+              <Mail className="w-4 h-4" />
+              Resend Confirmation Email {resendCooldown > 0 && `(${resendCooldown}s)`}
+            </>
+          )}
+        </Button>
+
+        <Link href="/auth/login" className="text-sm text-primary hover:underline block">
           Already confirmed? Sign in here
         </Link>
       </div>
