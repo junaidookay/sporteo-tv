@@ -139,7 +139,7 @@ export default function EventDetailPage() {
 
   const isLive = event.status === 'live'
   const isFreeEvent = !event.subscription_required && !event.ticket_price_cents
-  const canWatch = user && (isFreeEvent || purchase || subscription || user.user_metadata?.is_admin)
+  const canWatch = isFreeEvent || (user && (purchase || subscription || user.user_metadata?.is_admin))
 
   return (
     <div className="min-h-screen bg-background text-foreground">
