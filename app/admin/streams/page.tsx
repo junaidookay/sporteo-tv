@@ -214,7 +214,22 @@ export default function StreamsPage() {
         }))
       }
 
-      setMessage({ type: 'success', text: 'Stream stopped and archived.' })
+      setMessage({ type: 'success', text: 'Stream stopped. Fetching replay...' })
+
+      // Automatically fetch replay from Cloudflare
+      const response = await fetch('/api/admin/events/fetch-replay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Stream stopped and replay fetched successfully!' })
+      } else {
+        setMessage({ type: 'success', text: `Stream stopped. ${result.message}` })
+      }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to stop stream' })
     }
