@@ -13,14 +13,14 @@ export const SUBSCRIPTION_PLANS: Product[] = [
     id: 'sub_monthly',
     name: 'Monthly Pass',
     description: 'Unlimited access to all events for one month',
-    priceInCents: 999, // $9.99/month
+    priceInCents: 999, // €9.99/month
     billingPeriod: 'monthly',
   },
   {
     id: 'sub_annual',
     name: 'Annual Pass',
     description: 'Unlimited access to all events for one year',
-    priceInCents: 9999, // $99.99/year
+    priceInCents: 9999, // €99.99/year
     billingPeriod: 'annual',
   },
 ]
