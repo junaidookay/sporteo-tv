@@ -277,7 +277,7 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-bold mb-2">Annual Sub Price (cents)</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">$</span>
+                      <span className="text-muted-foreground">€</span>
                       <input
                         type="number"
                         name="yearlySubPrice"
