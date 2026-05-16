@@ -151,7 +151,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <Card className="p-8 border-border">
               <h3 className="text-2xl font-black mb-8">Complete Your Purchase</h3>
-              <Checkout productId={productId} autoStart={true} />
+              <Checkout productId={productId} eventId={!plan ? productId : undefined} autoStart={true} />
             </Card>
           </div>
         </div>

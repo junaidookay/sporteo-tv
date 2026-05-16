@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState, useMemo, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   EmbeddedCheckout,
   EmbeddedCheckoutProvider,
@@ -12,9 +13,10 @@ import { startCheckoutSession } from '../app/actions/stripe'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
-export default function Checkout({ productId, autoStart = false }: { productId: string; autoStart?: boolean }) {
+export default function Checkout({ productId, eventId, autoStart = false }: { productId: string; eventId?: string; autoStart?: boolean }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(autoStart)
+  const router = useRouter()
 
   useEffect(() => {
     if (autoStart) {
@@ -25,15 +27,26 @@ export default function Checkout({ productId, autoStart = false }: { productId: 
   const handleStartCheckout = useCallback(async () => {
     setLoading(true)
     try {
-      const secret = await startCheckoutSession(productId)
+      const secret = await startCheckoutSession(productId, eventId)
       setClientSecret(secret)
     } catch (error) {
       console.error('Failed to start checkout:', error)
       setLoading(false)
     }
-  }, [productId])
+  }, [productId, eventId])
 
-  const options = useMemo(() => ({ clientSecret }), [clientSecret])
+  const handleComplete = useCallback(async () => {
+    if (eventId) {
+      router.push(`/watch/${eventId}?success=true`)
+    } else {
+      router.push('/dashboard?success=true')
+    }
+  }, [eventId, router])
+
+  const options = useMemo(() => ({
+    clientSecret,
+    onComplete: handleComplete,
+  }), [clientSecret, handleComplete])
 
   if (clientSecret) {
     return (
