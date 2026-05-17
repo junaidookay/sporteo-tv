@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 export function useForceLogout(onForceLogout?: () => void) {
   const router = useRouter()
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(true)
 
   const handleForceLogout = useCallback(async () => {
@@ -21,18 +19,20 @@ export function useForceLogout(onForceLogout?: () => void) {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
     }
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
     
-    const supabase = createClient()
-    await supabase.auth.signOut()
     localStorage.removeItem('device_id')
+    
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+      console.log('[force_logout] Logout API response:', res.status)
+    } catch (e) {
+      console.error('[force_logout] Logout fetch failed:', e)
+    }
     
     if (onForceLogout) {
       onForceLogout()
     } else {
-      router.push('/auth/login?reason=session_expired')
+      window.location.href = '/auth/login?reason=session_expired'
     }
   }, [router, onForceLogout, isLoggedIn])
 
@@ -41,14 +41,6 @@ export function useForceLogout(onForceLogout?: () => void) {
     if (!deviceId) return
 
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        handleForceLogout()
-        return
-      }
-
       const response = await fetch('/api/user-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,7 +57,7 @@ export function useForceLogout(onForceLogout?: () => void) {
         return
       }
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
       if (data.valid === false) {
         handleForceLogout()
       }
@@ -79,20 +71,14 @@ export function useForceLogout(onForceLogout?: () => void) {
 
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) {
-      console.log('[force_logout] No device_id found, skipping SSE connection')
+      console.log('[force_logout] No device_id found, skipping polling')
       return
     }
 
     console.log('[force_logout] Starting polling with device_id:', deviceId)
 
-    const startPolling = () => {
-      if (!isLoggedIn) return
-      
-      checkSessionValidity()
-      pollIntervalRef.current = setInterval(checkSessionValidity, 3000)
-    }
-
-    startPolling()
+    checkSessionValidity()
+    pollIntervalRef.current = setInterval(checkSessionValidity, 3000)
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isLoggedIn) {
@@ -117,9 +103,6 @@ export function useForceLogout(onForceLogout?: () => void) {
       }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
