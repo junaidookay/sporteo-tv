@@ -41,17 +41,23 @@ export default function WatchPage() {
           const response = await fetch('/api/user-sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ action: 'validate', device_id: deviceId })
           })
           
           if (response.status === 401 || !response.ok) {
-            const data = await response.json()
-            if (data.valid === false) {
-              await supabase.auth.signOut()
-              localStorage.removeItem('device_id')
-              window.location.href = '/auth/login?reason=session_expired'
-              return
-            }
+            await supabase.auth.signOut()
+            localStorage.removeItem('device_id')
+            window.location.href = '/auth/login?reason=session_expired'
+            return
+          }
+          
+          const data = await response.json().catch(() => ({}))
+          if (data.valid === false) {
+            await supabase.auth.signOut()
+            localStorage.removeItem('device_id')
+            window.location.href = '/auth/login?reason=session_expired'
+            return
           }
         }
 
