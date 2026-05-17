@@ -286,7 +286,7 @@ export default function EventDetailPage() {
               ) : event.subscription_required ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground mb-4">Get a membership to watch</p>
-                  <Link href="/subscriptions" className="w-full block">
+                  <Link href={`/subscriptions?eventId=${eventId}`} className="w-full block">
                     <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                       Get Membership
                     </Button>

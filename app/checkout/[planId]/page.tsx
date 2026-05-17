@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import Checkout from '@/components/checkout'
@@ -9,9 +9,11 @@ import { SUBSCRIPTION_PLANS, formatPrice } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 import { getEventById } from '@/lib/db-client'
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const productId = params.planId as string
+  const eventIdFromUrl = searchParams.get('eventId')
   const [event, setEvent] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -151,11 +153,28 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <Card className="p-8 border-border">
               <h3 className="text-2xl font-black mb-8">Complete Your Purchase</h3>
-              <Checkout productId={productId} eventId={!plan ? productId : undefined} autoStart={true} />
+              <Checkout productId={productId} eventId={plan ? eventIdFromUrl : productId} autoStart={true} />
             </Card>
           </div>
         </div>
       </main>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <Card className="p-8 border-border text-center">
+            <p className="text-muted-foreground">Loading...</p>
+          </Card>
+        </main>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   )
 }

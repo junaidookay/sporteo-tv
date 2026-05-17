@@ -1,15 +1,18 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SUBSCRIPTION_PLANS, formatPrice } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SubscriptionsPage() {
+function SubscriptionContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const eventId = searchParams.get('eventId')
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [subscription, setSubscription] = useState<any>(null)
@@ -159,7 +162,7 @@ export default function SubscriptionsPage() {
               </ul>
 
               <Button
-                onClick={() => router.push('/checkout/sub_monthly')}
+                onClick={() => router.push(`/checkout/sub_monthly${eventId ? `?eventId=${eventId}` : ''}`)}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Get Started
@@ -199,7 +202,7 @@ export default function SubscriptionsPage() {
               </ul>
 
               <Button
-                onClick={() => router.push('/checkout/sub_annual')}
+                onClick={() => router.push(`/checkout/sub_annual${eventId ? `?eventId=${eventId}` : ''}`)}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Get Started
@@ -251,5 +254,20 @@ export default function SubscriptionsPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function SubscriptionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <p className="text-center text-muted-foreground">Loading...</p>
+        </main>
+      </div>
+    }>
+      <SubscriptionContent />
+    </Suspense>
   )
 }
