@@ -128,7 +128,10 @@ export async function POST(request: NextRequest) {
             user_id: user.id,
             device_id: device_id,
             device_name: device_name,
-            ip_address: request.headers.get('x-forwarded-for') || 'unknown',
+            ip_address: (() => {
+              const forwardedFor = request.headers.get('x-forwarded-for')
+              return forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown'
+            })(),
             is_active: true,
           })
           .select()
