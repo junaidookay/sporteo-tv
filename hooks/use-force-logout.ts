@@ -6,21 +6,23 @@ import { createClient } from '@/lib/supabase/client'
 
 export function useForceLogout(onForceLogout?: () => void) {
   const router = useRouter()
-  const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(true)
 
   const handleForceLogout = useCallback(async () => {
     if (!isLoggedIn) return
     setIsLoggedIn(false)
     
-    eventSourceRef.current?.close()
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
     }
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current)
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
     }
     
     const supabase = createClient()
@@ -60,7 +62,6 @@ export function useForceLogout(onForceLogout?: () => void) {
       }
 
       if (!response.ok) {
-        console.error('[force_logout] Session check failed with status:', response.status)
         return
       }
 
@@ -82,62 +83,16 @@ export function useForceLogout(onForceLogout?: () => void) {
       return
     }
 
-    console.log('[force_logout] Connecting SSE with device_id:', deviceId)
+    console.log('[force_logout] Starting polling with device_id:', deviceId)
 
-    const connectSSE = () => {
+    const startPolling = () => {
       if (!isLoggedIn) return
       
-      try {
-        const url = `/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`
-        console.log('[force_logout] Creating EventSource:', url)
-        
-        eventSourceRef.current = new EventSource(url)
-
-        eventSourceRef.current.onopen = () => {
-          console.log('[force_logout] SSE connection opened')
-        }
-
-        eventSourceRef.current.addEventListener('force_logout', (event) => {
-          console.log('[force_logout] Received force_logout event:', event)
-          try {
-            const data = JSON.parse(event.data)
-            console.log('[force_logout] Event data:', data)
-          } catch (e) {
-            console.error('[force_logout] Failed to parse event data:', e)
-          }
-          handleForceLogout()
-        })
-
-        eventSourceRef.current.addEventListener('session_invalid', (event) => {
-          console.log('[force_logout] Received session_invalid event')
-          handleForceLogout()
-        })
-
-        eventSourceRef.current.onerror = (error) => {
-          console.error('[force_logout] SSE error:', error)
-          eventSourceRef.current?.close()
-          eventSourceRef.current = null
-          
-          if (isLoggedIn) {
-            console.log('[force_logout] Reconnecting SSE in 5 seconds...')
-            reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
-          }
-        }
-      } catch (e) {
-        console.error('[force_logout] Failed to create EventSource:', e)
-        if (isLoggedIn) {
-          reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
-        }
-      }
+      checkSessionValidity()
+      pollIntervalRef.current = setInterval(checkSessionValidity, 3000)
     }
 
-    connectSSE()
-
-    pollIntervalRef.current = setInterval(() => {
-      if (isLoggedIn) {
-        checkSessionValidity()
-      }
-    }, 5000)
+    startPolling()
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isLoggedIn) {
@@ -157,13 +112,14 @@ export function useForceLogout(onForceLogout?: () => void) {
     window.addEventListener('focus', handleFocus)
 
     return () => {
-      eventSourceRef.current?.close()
-      eventSourceRef.current = null
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
