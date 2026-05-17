@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { VideoPlayer } from '@/components/cloudflare-video-player'
+import CloudflareVideoPlayer from '@/components/cloudflare-video-player'
 import { createClient } from '@/lib/supabase/client'
 import { useForceLogout } from '@/hooks/use-force-logout'
 
@@ -253,7 +253,7 @@ export default function WatchPage() {
                   />
                 </div>
               ) : (
-                <VideoPlayer
+                <CloudflareVideoPlayer
                   src={streamUrl}
                   poster={event.featured_image}
                   title={event.title}
