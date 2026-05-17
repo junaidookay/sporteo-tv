@@ -35,6 +35,26 @@ export default function WatchPage() {
   useEffect(() => {
     const loadStreamData = async () => {
       try {
+        const deviceId = localStorage.getItem('device_id')
+        
+        if (deviceId) {
+          const response = await fetch('/api/user-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'validate', device_id: deviceId })
+          })
+          
+          if (response.status === 401 || !response.ok) {
+            const data = await response.json()
+            if (data.valid === false) {
+              await supabase.auth.signOut()
+              localStorage.removeItem('device_id')
+              window.location.href = '/auth/login?reason=session_expired'
+              return
+            }
+          }
+        }
+
         // Get user
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         if (userError || !user) {
