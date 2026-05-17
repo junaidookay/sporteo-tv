@@ -48,16 +48,17 @@ export async function GET(request: NextRequest) {
           request.signal.addEventListener('abort', cleanup)
         } catch (e) {
           console.error('[SSE START ERROR]', e)
-          controller.close()
+          try { controller.close() } catch (e2) {}
         }
       },
       cancel() {
         const clients = connectedClients.get(userId)
         if (clients) {
-          clients.forEach((_, c) => {
-            try { c.close() } catch (e) {}
-          })
-          connectedClients.delete(userId)
+          clients.delete(controller)
+          console.log(`[SSE CANCEL] userId: ${userId}, remaining: ${clients.size}`)
+          if (clients.size === 0) {
+            connectedClients.delete(userId)
+          }
         }
       }
     })
@@ -247,11 +248,26 @@ function broadcastToUser(userId: string, event: string, data: any) {
   const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
   console.log(`[BROADCAST] Sending ${event} to ${clients.size} clients for user ${userId}`)
 
-  clients.forEach((deviceId, controller) => {
+  const deadControllers: ReadableStreamDefaultController[] = []
+
+  clients.forEach((controller, deviceId) => {
     try {
+      if (typeof controller.enqueue !== 'function') {
+        console.log(`[BROADCAST] Invalid controller for device ${deviceId}`)
+        deadControllers.push(controller)
+        return
+      }
       controller.enqueue(new TextEncoder().encode(message))
-    } catch (e) {
-      console.error(`[BROADCAST ERROR] Device ${deviceId}:`, e)
+    } catch (e: any) {
+      console.error(`[BROADCAST ERROR] Device ${deviceId}:`, e?.message)
+      if (e?.message?.includes('closed') || e?.message?.includes('abort')) {
+        deadControllers.push(controller)
+      }
     }
   })
+
+  deadControllers.forEach(c => clients.delete(c))
+  if (deadControllers.length > 0) {
+    console.log(`[BROADCAST] Removed ${deadControllers.length} dead controllers`)
+  }
 }
