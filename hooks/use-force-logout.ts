@@ -54,8 +54,13 @@ export function useForceLogout(onForceLogout?: () => void) {
         body: JSON.stringify({ action: 'validate', device_id: deviceId })
       })
 
-      if (response.status === 401 || !response.ok) {
+      if (response.status === 401) {
         handleForceLogout()
+        return
+      }
+
+      if (!response.ok) {
+        console.error('[force_logout] Session check failed with status:', response.status)
         return
       }
 
@@ -72,14 +77,34 @@ export function useForceLogout(onForceLogout?: () => void) {
     if (typeof window === 'undefined') return
 
     const deviceId = localStorage.getItem('device_id')
-    if (!deviceId) return
+    if (!deviceId) {
+      console.log('[force_logout] No device_id found, skipping SSE connection')
+      return
+    }
+
+    console.log('[force_logout] Connecting SSE with device_id:', deviceId)
 
     const connectSSE = () => {
+      if (!isLoggedIn) return
+      
       try {
-        eventSourceRef.current = new EventSource(`/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`)
+        const url = `/api/user-sessions?device_id=${encodeURIComponent(deviceId)}`
+        console.log('[force_logout] Creating EventSource:', url)
+        
+        eventSourceRef.current = new EventSource(url)
+
+        eventSourceRef.current.onopen = () => {
+          console.log('[force_logout] SSE connection opened')
+        }
 
         eventSourceRef.current.addEventListener('force_logout', (event) => {
-          console.log('[force_logout] Received SSE event:', event)
+          console.log('[force_logout] Received force_logout event:', event)
+          try {
+            const data = JSON.parse(event.data)
+            console.log('[force_logout] Event data:', data)
+          } catch (e) {
+            console.error('[force_logout] Failed to parse event data:', e)
+          }
           handleForceLogout()
         })
 
@@ -88,31 +113,44 @@ export function useForceLogout(onForceLogout?: () => void) {
           handleForceLogout()
         })
 
-        eventSourceRef.current.onerror = () => {
+        eventSourceRef.current.onerror = (error) => {
+          console.error('[force_logout] SSE error:', error)
           eventSourceRef.current?.close()
           eventSourceRef.current = null
-          reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
+          
+          if (isLoggedIn) {
+            console.log('[force_logout] Reconnecting SSE in 5 seconds...')
+            reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
+          }
         }
       } catch (e) {
-        console.error('[force_logout] SSE connection failed:', e)
-        reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
+        console.error('[force_logout] Failed to create EventSource:', e)
+        if (isLoggedIn) {
+          reconnectTimeoutRef.current = setTimeout(connectSSE, 5000)
+        }
       }
     }
 
     connectSSE()
 
-    pollIntervalRef.current = setInterval(checkSessionValidity, 5000)
+    pollIntervalRef.current = setInterval(() => {
+      if (isLoggedIn) {
+        checkSessionValidity()
+      }
+    }, 5000)
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && isLoggedIn) {
         console.log('[force_logout] Page became visible, checking session')
         checkSessionValidity()
       }
     }
 
     const handleFocus = () => {
-      console.log('[force_logout] Window gained focus, checking session')
-      checkSessionValidity()
+      if (isLoggedIn) {
+        console.log('[force_logout] Window gained focus, checking session')
+        checkSessionValidity()
+      }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -120,6 +158,7 @@ export function useForceLogout(onForceLogout?: () => void) {
 
     return () => {
       eventSourceRef.current?.close()
+      eventSourceRef.current = null
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
@@ -129,5 +168,5 @@ export function useForceLogout(onForceLogout?: () => void) {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [handleForceLogout, checkSessionValidity])
+  }, [handleForceLogout, checkSessionValidity, isLoggedIn])
 }
