@@ -6,12 +6,21 @@ import { useParams, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { VideoPlayer } from '@/components/cloudflare-video-player'
 import { createClient } from '@/lib/supabase/client'
+import { useForceLogout } from '@/hooks/use-force-logout'
 
 export default function WatchPage() {
   const params = useParams()
   const eventId = params.id as string
   const supabase = createClient()
+  const router = useRouter()
+
+  useForceLogout({
+    onForceLogout: () => {
+      router.push('/auth/login?reason=session_expired')
+    }
+  })
 
   const [event, setEvent] = useState<any>(null)
   const [streamUrl, setStreamUrl] = useState<string>('')

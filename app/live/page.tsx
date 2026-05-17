@@ -4,6 +4,7 @@ import { LiveStreamCard } from '@/components/live-stream-card'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import ForceLogoutProvider from '@/components/force-logout-provider'
 
 export const revalidate = 60
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,7 @@ export default async function LivePage() {
   }
 
   return (
+    <ForceLogoutProvider>
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
@@ -76,5 +78,6 @@ export default async function LivePage() {
         )}
       </main>
     </div>
+    </ForceLogoutProvider>
   )
 }
