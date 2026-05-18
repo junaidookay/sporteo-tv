@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export function useForceLogout(onForceLogout?: () => void) {
   const router = useRouter()
@@ -45,6 +46,17 @@ export function useForceLogout(onForceLogout?: () => void) {
     }
 
     try {
+      // Check Supabase auth - this gets invalidated when same user logs in elsewhere
+      const supabase = createClient()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        console.log('[force_logout] Supabase auth invalid:', authError?.message)
+        handleForceLogout()
+        return
+      }
+
+      // Also check database session
       const response = await fetch('/api/user-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
