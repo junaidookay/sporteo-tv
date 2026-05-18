@@ -1,128 +1,160 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export function useForceLogout(onForceLogout?: () => void) {
-  const router = useRouter()
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const onForceLogoutRef = useRef(onForceLogout)
+  const isProcessingRef = useRef(false)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(true)
 
-  const handleForceLogout = useCallback(async () => {
-    if (!isLoggedIn) return
-    setIsLoggedIn(false)
-    
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-    }
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current)
-    }
-    
-    localStorage.removeItem('device_id')
-    
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    } catch (e) {
-      console.error('[force_logout] Logout fetch failed:', e)
-    }
-    
-    if (onForceLogout) {
-      onForceLogout()
-    } else {
-      window.location.href = '/auth/login?reason=session_expired'
-    }
-  }, [router, onForceLogout, isLoggedIn])
-
-  const checkSessionValidity = useCallback(async () => {
-    if (!isLoggedIn) return
-    
-    const deviceId = localStorage.getItem('device_id')
-    if (!deviceId) {
-      handleForceLogout()
-      return
-    }
-
-    try {
-      // Check Supabase auth - this gets invalidated when same user logs in elsewhere
-      const supabase = createClient()
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (authError || !user) {
-        console.log('[force_logout] Supabase auth invalid:', authError?.message)
-        handleForceLogout()
-        return
-      }
-
-      // Also check database session
-      const response = await fetch('/api/user-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ action: 'validate', device_id: deviceId })
-      })
-
-      if (response.status === 401) {
-        handleForceLogout()
-        return
-      }
-
-      if (!response.ok) {
-        return
-      }
-
-      const data = await response.json().catch(() => ({}))
-      if (data.valid === false) {
-        handleForceLogout()
-      }
-    } catch (e) {
-      console.error('[force_logout] Session check failed:', e)
-    }
-  }, [handleForceLogout, isLoggedIn])
+  // Keep callback ref up to date
+  useEffect(() => {
+    onForceLogoutRef.current = onForceLogout
+  }, [onForceLogout])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) {
-      console.log('[force_logout] No device_id found, redirecting')
-      handleForceLogout()
+      console.log('[force_logout] No device_id found, skipping monitoring')
       return
     }
 
-    console.log('[force_logout] Starting polling with device_id:', deviceId)
+    console.log('[force_logout] Starting session monitoring for device:', deviceId)
+    isProcessingRef.current = false
 
-    checkSessionValidity()
-    pollIntervalRef.current = setInterval(checkSessionValidity, 3000)
+    // Define logout function inside effect to avoid closure issues
+    const doLogout = async (reason: string) => {
+      if (isProcessingRef.current) {
+        console.log('[force_logout] Logout already in progress')
+        return
+      }
+      isProcessingRef.current = true
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isLoggedIn) {
-        console.log('[force_logout] Page became visible, checking session')
-        checkSessionValidity()
+      console.log('[force_logout] Logging out, reason:', reason)
+
+      // Stop polling immediately
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+
+      // Clear device_id
+      try {
+        localStorage.removeItem('device_id')
+      } catch (e) {
+        // Ignore
+      }
+
+      // Call logout API
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+      } catch (e) {
+        console.error('[force_logout] Logout API error:', e)
+      }
+
+      // Execute callback or redirect
+      const callback = onForceLogoutRef.current
+      if (callback && typeof callback === 'function') {
+        try {
+          callback()
+        } catch (e) {
+          console.error('[force_logout] Callback error:', e)
+          window.location.href = '/auth/login?reason=session_expired'
+        }
+      } else {
+        window.location.href = '/auth/login?reason=session_expired'
       }
     }
 
-    const handleFocus = () => {
-      if (isLoggedIn) {
-        console.log('[force_logout] Window gained focus, checking session')
-        checkSessionValidity()
+    // Check session function
+    const checkSession = async () => {
+      if (isProcessingRef.current) return
+
+      const currentDeviceId = localStorage.getItem('device_id')
+      if (!currentDeviceId) {
+        console.log('[force_logout] No device_id during check')
+        doLogout('no_device_id')
+        return
       }
+
+      try {
+        // Check Supabase auth
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+          console.log('[force_logout] Supabase auth invalid')
+          doLogout('supabase_invalid')
+          return
+        }
+
+        // Check database session
+        const response = await fetch('/api/user-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            action: 'validate',
+            device_id: currentDeviceId
+          })
+        })
+
+        if (response.status === 401) {
+          console.log('[force_logout] Session returned 401')
+          doLogout('session_401')
+          return
+        }
+
+        if (!response.ok) {
+          return
+        }
+
+        const data = await response.json().catch(() => ({ valid: true }))
+        if (data.valid === false) {
+          console.log('[force_logout] Session invalid in database')
+          doLogout('session_invalid')
+        }
+      } catch (e) {
+        console.error('[force_logout] Check error:', e)
+      }
+    }
+
+    // Initial check
+    checkSession()
+
+    // Start polling - check every 1 second for rapid detection
+    pollIntervalRef.current = setInterval(checkSession, 1000)
+
+    // Check on visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[force_logout] Page visible')
+        checkSession()
+      }
+    }
+
+    // Check on focus
+    const handleFocus = () => {
+      console.log('[force_logout] Window focused')
+      checkSession()
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
 
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [handleForceLogout, checkSessionValidity, isLoggedIn])
+  }, []) // Empty deps - only run once on mount
 }
