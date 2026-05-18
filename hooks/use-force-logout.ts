@@ -16,9 +16,14 @@ export function useForceLogout(onForceLogout?: () => void) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // CRITICAL: Don't run on auth pages at all
+    const pathname = window.location.pathname
+    if (pathname.startsWith('/auth/')) {
+      return
+    }
+
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) {
-      console.log('[force_logout] No device_id found, skipping monitoring')
       return
     }
 

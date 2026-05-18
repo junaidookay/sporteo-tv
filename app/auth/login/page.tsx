@@ -65,81 +65,18 @@ export default function Page() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Only check if already logged in, don't poll
   useEffect(() => {
-    const deviceId = getOrCreateDeviceId()
-
-    const checkSession = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const checkIfLoggedIn = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        try {
-          const response = await fetch('/api/user-sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              action: 'validate',
-              device_id: deviceId
-            })
-          })
-
-          if (!response.ok) {
-            await supabase.auth.signOut()
-            return
-          }
-
-          const data = await response.json()
-
-          if (data.valid === false) {
-            await supabase.auth.signOut()
-            return
-          }
-
-          router.push('/')
-        } catch (e) {
-          await supabase.auth.signOut()
-        }
+        // User is already logged in, redirect to home
+        router.push('/')
       }
     }
-
-    checkSession()
-  }, [])
-
-  useEffect(() => {
-    const deviceId = getOrCreateDeviceId()
-
-    const pollSession = async () => {
-      try {
-        const response = await fetch('/api/user-sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            action: 'validate',
-            device_id: deviceId
-          })
-        })
-        if (!response.ok) {
-          await supabase.auth.signOut()
-          router.push('/auth/login')
-          return
-        }
-        const data = await response.json()
-        if (data.valid === false) {
-          await supabase.auth.signOut()
-          router.push('/auth/login')
-        }
-      } catch (e) {
-        await supabase.auth.signOut()
-      }
-    }
-
-    const timeout = setTimeout(pollSession, 5000)
-    const interval = setInterval(pollSession, 5000)
-
-    return () => {
-      clearTimeout(timeout)
-      clearInterval(interval)
-    }
+    
+    checkIfLoggedIn()
+    // No polling - just one check on mount
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
