@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
+import ForceLogoutProvider from '@/components/force-logout-provider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -47,7 +48,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        {children}
+        <ForceLogoutProvider>
+          {children}
+        </ForceLogoutProvider>
         <CookieConsentBanner />
       </body>
     </html>
