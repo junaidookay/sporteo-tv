@@ -42,24 +42,23 @@ export function useForceLogout(onForceLogout?: () => void) {
         // Ignore
       }
 
-      // NOTE: Do NOT call supabase.auth.signOut() here!
-      // That would invalidate the global auth token for ALL devices
-      // Instead, just redirect - the middleware will handle auth checks
-
-      // Call logout API to invalidate only this device's session in database
+      // Clear all Supabase auth state client-side
       try {
-        const deviceId = localStorage.getItem('device_id')
-        if (deviceId) {
-          await fetch('/api/user-sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              action: 'logout',
-              device_id: deviceId
-            })
-          })
-        }
+        const supabase = createClient()
+        await supabase.auth.signOut()
+        console.log('[force_logout] Cleared Supabase auth')
+      } catch (e) {
+        console.error('[force_logout] Supabase signOut error:', e)
+      }
+
+      // Call logout API to clear server-side session
+      try {
+        console.log('[force_logout] Calling logout API...')
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        console.log('[force_logout] Logout API completed')
       } catch (e) {
         console.error('[force_logout] Logout API error:', e)
       }
@@ -87,7 +86,7 @@ export function useForceLogout(onForceLogout?: () => void) {
       }
 
       const pathname = window.location.pathname
-
+      
       // Skip if on auth page
       if (pathname.startsWith('/auth/')) {
         return
