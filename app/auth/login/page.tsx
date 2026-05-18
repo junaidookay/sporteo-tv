@@ -18,25 +18,20 @@ import { useState, useEffect } from 'react'
 function getOrCreateDeviceId(): string {
   if (typeof window === 'undefined') return ''
 
+  // First check if we already have a persistent device ID
   let deviceId = localStorage.getItem('device_id')
+  
   if (!deviceId) {
-    const browserInfo = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width,
-      screen.height,
-      new Date().getTimezoneOffset()
-    ].join('|')
-
-    let hash = 0
-    for (let i = 0; i < browserInfo.length; i++) {
-      const char = browserInfo.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash
-    }
-    deviceId = `device_${Math.abs(hash).toString(16)}`
+    // Generate a truly unique device ID using crypto random
+    const array = new Uint8Array(16)
+    crypto.getRandomValues(array)
+    deviceId = 'device_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
     localStorage.setItem('device_id', deviceId)
+    console.log('[login] Created new device_id:', deviceId)
+  } else {
+    console.log('[login] Using existing device_id:', deviceId)
   }
+  
   return deviceId
 }
 
@@ -101,6 +96,8 @@ export default function Page() {
       const deviceId = getOrCreateDeviceId()
       const deviceName = getDeviceName()
 
+      console.log('[login] Logging in with device_id:', deviceId, 'device_name:', deviceName)
+
       const response = await fetch('/api/user-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +116,6 @@ export default function Page() {
       }
 
       document.cookie = `device_id=${deviceId}; path=/; max-age=86400; samesite=strict`
-      localStorage.setItem('device_id', deviceId)
 
       await new Promise(resolve => setTimeout(resolve, 500))
 

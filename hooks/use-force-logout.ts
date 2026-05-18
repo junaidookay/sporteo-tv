@@ -48,22 +48,31 @@ export function useForceLogout(onForceLogout?: () => void) {
         pollIntervalRef.current = null
       }
 
-      // Clear device_id
+      // Clear local storage device_id
       try {
         localStorage.removeItem('device_id')
         console.log('[force_logout] Cleared device_id from localStorage')
       } catch (e) {
-        console.error('[force_logout] Error clearing device_id:', e)
+        // Ignore
       }
 
-      // Call logout API
+      // Clear all Supabase auth state client-side
+      try {
+        const supabase = createClient()
+        await supabase.auth.signOut()
+        console.log('[force_logout] Cleared Supabase auth')
+      } catch (e) {
+        console.error('[force_logout] Supabase signOut error:', e)
+      }
+
+      // Call logout API to clear server-side session
       try {
         console.log('[force_logout] Calling logout API...')
-        const response = await fetch('/api/auth/logout', {
+        await fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include'
         })
-        console.log('[force_logout] Logout API response:', response.status)
+        console.log('[force_logout] Logout API completed')
       } catch (e) {
         console.error('[force_logout] Logout API error:', e)
       }
@@ -76,10 +85,12 @@ export function useForceLogout(onForceLogout?: () => void) {
           callback()
         } catch (e) {
           console.error('[force_logout] Callback error:', e)
+          // Fallback to full page reload redirect
           window.location.href = '/auth/login?reason=session_expired'
         }
       } else {
         console.log('[force_logout] Redirecting to login...')
+        // Use full page reload to ensure clean state
         window.location.href = '/auth/login?reason=session_expired'
       }
     }
@@ -87,7 +98,6 @@ export function useForceLogout(onForceLogout?: () => void) {
     // Check session function
     const checkSession = async () => {
       if (isProcessingRef.current) {
-        console.log('[force_logout] Skipping check - logout in progress')
         return
       }
 
@@ -133,7 +143,6 @@ export function useForceLogout(onForceLogout?: () => void) {
         }
 
         if (!response.ok) {
-          console.log('[force_logout] Session validation failed with status:', response.status)
           return
         }
 
@@ -153,7 +162,6 @@ export function useForceLogout(onForceLogout?: () => void) {
 
     // Start polling - check every 1 second for rapid detection
     pollIntervalRef.current = setInterval(() => {
-      console.log('[force_logout] Polling session check...')
       checkSession()
     }, 1000)
 
