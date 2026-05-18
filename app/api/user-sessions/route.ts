@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { action, device_id, device_name } = body
+    console.log(`[USER-SESSIONS POST] action: ${action}, userId: ${user.id}, deviceId: ${device_id}`)
 
     if (action === 'login') {
       if (!device_id || !device_name) {
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
 
         if (existingSession) {
+          console.log(`[LOGIN] Session exists for device ${device_id}, refreshing...`)
           await supabase
             .from('user_sessions')
             .update({ last_active_at: new Date().toISOString() })
@@ -117,10 +119,15 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ success: true, message: 'Session refreshed', session: existingSession })
         }
 
-        await supabase
+        console.log(`[LOGIN] No existing session for device ${device_id}, invalidating all sessions for user ${user.id}`)
+        const { error: updateError } = await supabase
           .from('user_sessions')
           .update({ is_active: false })
           .eq('user_id', user.id)
+
+        if (updateError) {
+          console.error('[LOGIN] Error updating sessions:', updateError)
+        }
 
         const { data: newSession, error: insertError } = await supabase
           .from('user_sessions')
@@ -139,6 +146,7 @@ export async function POST(request: NextRequest) {
 
         if (insertError) throw insertError
 
+        console.log(`[LOGIN] New session created:`, newSession)
         return NextResponse.json({ success: true, session: newSession })
       } catch (error: any) {
         console.error('[LOGIN ERROR]', error)
@@ -148,10 +156,13 @@ export async function POST(request: NextRequest) {
 
     if (action === 'validate') {
       if (!device_id) {
+        console.log('[VALIDATE] Missing device_id')
         return NextResponse.json({ error: 'Missing device_id' }, { status: 400 })
       }
 
       try {
+        console.log(`[VALIDATE] Checking session for user ${user.id}, device ${device_id}`)
+        
         const { data: session, error: sessionError } = await supabase
           .from('user_sessions')
           .select('id, user_id, device_id, is_active, created_at')
@@ -166,9 +177,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (!session) {
+          console.log(`[VALIDATE] No active session found for device ${device_id} - returning 401`)
           return NextResponse.json({ valid: false, error: 'Session expired' }, { status: 401 })
         }
 
+        console.log(`[VALIDATE] Session valid for device ${device_id}:`, session)
         return NextResponse.json({ valid: true, session })
       } catch (error: any) {
         console.error('[VALIDATE ERROR]', error)
