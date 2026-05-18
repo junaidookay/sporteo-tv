@@ -23,8 +23,7 @@ export function useForceLogout(onForceLogout?: () => void) {
     localStorage.removeItem('device_id')
     
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-      console.log('[force_logout] Logout API response:', res.status)
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
     } catch (e) {
       console.error('[force_logout] Logout fetch failed:', e)
     }
@@ -37,8 +36,13 @@ export function useForceLogout(onForceLogout?: () => void) {
   }, [router, onForceLogout, isLoggedIn])
 
   const checkSessionValidity = useCallback(async () => {
+    if (!isLoggedIn) return
+    
     const deviceId = localStorage.getItem('device_id')
-    if (!deviceId) return
+    if (!deviceId) {
+      handleForceLogout()
+      return
+    }
 
     try {
       const response = await fetch('/api/user-sessions', {
@@ -64,14 +68,15 @@ export function useForceLogout(onForceLogout?: () => void) {
     } catch (e) {
       console.error('[force_logout] Session check failed:', e)
     }
-  }, [handleForceLogout])
+  }, [handleForceLogout, isLoggedIn])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const deviceId = localStorage.getItem('device_id')
     if (!deviceId) {
-      console.log('[force_logout] No device_id found, skipping polling')
+      console.log('[force_logout] No device_id found, redirecting')
+      handleForceLogout()
       return
     }
 
