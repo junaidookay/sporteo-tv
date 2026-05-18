@@ -16,25 +16,9 @@ export function useForceLogout(onForceLogout?: () => void) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const pathname = window.location.pathname
-    console.log('[force_logout] Mounted on page:', pathname)
+    console.log('[force_logout] Hook mounted')
 
-    // CRITICAL: Don't run on auth pages at all
-    if (pathname.startsWith('/auth/')) {
-      console.log('[force_logout] Skipping - on auth page')
-      return
-    }
-
-    const deviceId = localStorage.getItem('device_id')
-    if (!deviceId) {
-      console.log('[force_logout] Skipping - no device_id')
-      return
-    }
-
-    console.log('[force_logout] Starting session monitoring for device:', deviceId)
-    isProcessingRef.current = false
-
-    // Define logout function inside effect to avoid closure issues
+    // Define logout function
     const doLogout = async (reason: string) => {
       if (isProcessingRef.current) {
         console.log('[force_logout] Logout already in progress')
@@ -87,12 +71,10 @@ export function useForceLogout(onForceLogout?: () => void) {
           callback()
         } catch (e) {
           console.error('[force_logout] Callback error:', e)
-          // Fallback to full page reload redirect
           window.location.href = '/auth/login?reason=session_expired'
         }
       } else {
         console.log('[force_logout] Redirecting to login...')
-        // Use full page reload to ensure clean state
         window.location.href = '/auth/login?reason=session_expired'
       }
     }
@@ -103,10 +85,16 @@ export function useForceLogout(onForceLogout?: () => void) {
         return
       }
 
+      const pathname = window.location.pathname
+      
+      // Skip if on auth page
+      if (pathname.startsWith('/auth/')) {
+        return
+      }
+
       const currentDeviceId = localStorage.getItem('device_id')
       if (!currentDeviceId) {
-        console.log('[force_logout] No device_id during check')
-        doLogout('no_device_id')
+        // No device_id yet - user might be logging in, just skip
         return
       }
 
@@ -158,14 +146,12 @@ export function useForceLogout(onForceLogout?: () => void) {
       }
     }
 
-    // Initial check
-    console.log('[force_logout] Running initial session check...')
-    checkSession()
+    // Start polling immediately - check every 1 second
+    console.log('[force_logout] Starting polling...')
+    pollIntervalRef.current = setInterval(checkSession, 1000)
 
-    // Start polling - check every 1 second for rapid detection
-    pollIntervalRef.current = setInterval(() => {
-      checkSession()
-    }, 1000)
+    // Also check immediately once
+    setTimeout(checkSession, 100)
 
     // Check on visibility change
     const handleVisibilityChange = () => {
@@ -185,7 +171,7 @@ export function useForceLogout(onForceLogout?: () => void) {
     window.addEventListener('focus', handleFocus)
 
     return () => {
-      console.log('[force_logout] Cleaning up - stopping polling')
+      console.log('[force_logout] Cleaning up')
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
         pollIntervalRef.current = null
@@ -193,5 +179,5 @@ export function useForceLogout(onForceLogout?: () => void) {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, []) // Empty deps - only run once on mount
+  }, []) // Run once on mount
 }
