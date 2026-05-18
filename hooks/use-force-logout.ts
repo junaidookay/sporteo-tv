@@ -16,8 +16,10 @@ export function useForceLogout(onForceLogout?: () => void) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // CRITICAL: Don't run on auth pages at all
     const pathname = window.location.pathname
+    console.log('[force_logout] Mounted on page:', pathname)
+
+    // CRITICAL: Don't run on auth pages at all
     if (pathname.startsWith('/auth/')) {
       console.log('[force_logout] Skipping - on auth page')
       return

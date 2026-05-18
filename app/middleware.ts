@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request)
 
-  const protectedPaths = ['/dashboard', '/profile', '/admin', '/checkout', '/events', '/watch', '/live', '/replays', '/subscriptions']
+  const protectedPaths = ['/', '/dashboard', '/profile', '/admin', '/checkout', '/events', '/watch', '/live', '/replays', '/subscriptions', '/contact', '/support']
   const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (isProtectedPath) {
